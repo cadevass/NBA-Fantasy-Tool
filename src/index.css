@@ -137,7 +137,7 @@ body {
 
 .player-row {
   display: grid;
-  grid-template-columns: 28px 28px 1fr 70px 70px 90px 60px 60px auto;
+  grid-template-columns: 28px 28px 1fr 70px 70px 90px 44px 160px 80px;
   align-items: center; gap: 8px;
   padding: 10px 12px; border-bottom: 1px solid var(--border); transition: background 0.1s;
 }
@@ -250,7 +250,7 @@ body {
 
 @media (max-width: 900px) {
   .page-grid-2 { grid-template-columns: 1fr; }
-  .player-row { grid-template-columns: 24px 24px 1fr auto; gap: 6px; }
+  .player-row { grid-template-columns: 24px 24px 1fr 120px 60px; gap: 6px; }
   .player-row .stat-val, .player-row .ceiling-dots { display: none; }
 }
 @media (max-width: 640px) {
