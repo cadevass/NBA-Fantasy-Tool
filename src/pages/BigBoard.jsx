@@ -212,7 +212,7 @@ Be direct and specific.`;
         <div className="card-body">
           <PickCountdown currentPick={currentPick} totalPicks={10} myPick={currentRound === 1 ? 8 : currentRound === 2 ? 3 : 8} />
           <div className="text-xs text-muted mt-2">
-            My picks: <strong>1.08</strong> · <strong>2.03</strong> · <strong>3.08</strong>
+            My picks: <strong>1.08</strong> · <strong>2.08</strong> · <strong>3.08</strong>
             &nbsp;·&nbsp;
             <button className="btn btn-xs btn-ghost" onClick={() => setCurrentPick(1)}>Reset</button>
             <button className="btn btn-xs btn-ghost" style={{ marginLeft: 4 }} onClick={() => setCurrentPick(p => p + 1)}>Advance Pick</button>
