@@ -10,7 +10,7 @@ const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const EMPTY_PROSPECT = {
   name: "", age: "", college: "", positions: [],
   height: "", pts: "", reb: "", ast: "", stl: "", blk: "",
-  projRole: "", nbaTeam: "", ceilingRating: 3, dynastyRating: 3, notes: "",
+  projRole: "", nbaTeam: "", threesMade: "", to: "", ceilingRating: 3, dynastyRating: 3, notes: "",
 };
 
 function scoringAlgo(p) {
