@@ -180,7 +180,7 @@ Be direct and specific.`;
   const bestAvailable = useMemo(() => {
     const available = rankedProspects.filter(p => !p.drafted);
     if (!available.length) return null;
-    const myPositions = [...MY_ROSTER.starters, ...MY_ROSTER.bench, ...MY_ROSTER.taxi].flatMap(p => p.pos);
+    const myPositions = myTeam ? [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])].flatMap(p => p.pos) : [];
     const posCount = {};
     POSITIONS.forEach(pos => { posCount[pos] = myPositions.filter(p => p === pos).length; });
     return available.map(p => ({
