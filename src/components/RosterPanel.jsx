@@ -15,7 +15,7 @@ function PlayerChip({ player, section }) {
     }}>
       <div>
         <div style={{ fontWeight: 500, fontSize: 13 }}>{player.name}</div>
-        {player.status && player.status !== "Active" && (
+        {player.status && player.status !== "Active" && player.status !== "ACT" && (
           <div style={{ fontSize: 10, color: "var(--red)", marginTop: 1 }}>{player.status}</div>
         )}
       </div>

@@ -31,7 +31,7 @@ function PlayerRow({ player, slot }) {
         <div>
           <span style={{ fontWeight: 500 }}>{player.name}</span>
           {isFA && <span style={{ marginLeft: 6, fontSize: 10, color: "var(--red)", fontWeight: 600 }}>FA</span>}
-          {player.status && player.status !== "Active" && (
+          {player.status && player.status !== "Active" && player.status !== "ACT" && (
             <span style={{ marginLeft: 6, fontSize: 10, color: "var(--red)" }}>{player.status}</span>
           )}
         </div>
