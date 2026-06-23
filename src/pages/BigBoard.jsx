@@ -345,7 +345,7 @@ Be direct and specific.`;
               <div>
                 <label className="label mb-1">Season Stats (per game)</label>
                 <div className="form-grid-3">
-                  {["pts", "reb", "ast", "stl", "blk"].map(stat => (
+                {["pts", "reb", "ast", "stl", "blk", "threesMade", "to"].map(stat => (
                     <div key={stat} className="input-group">
                       <label className="label">{stat === "threesMade" ? "3PM" : stat === "to" ? "TO" : stat.toUpperCase()}</label>
                       <input className="input" type="number" step="0.1" placeholder="0.0" value={form[stat]} onChange={e => setForm(f => ({ ...f, [stat]: e.target.value }))} />
