@@ -2,12 +2,14 @@ import { useState } from "react";
 import BigBoard from "./pages/BigBoard";
 import TradeFinder from "./pages/TradeFinder";
 import LockInAdvisor from "./pages/LockInAdvisor";
+import League from "./pages/League";
 import RosterPanel from "./components/RosterPanel";
 
 const TABS = [
   { id: "bigboard", label: "Big Board" },
   { id: "trade", label: "Trade Evaluator" },
   { id: "lockin", label: "Lock-In Advisor" },
+  { id: "league", label: "League" },
 ];
 
 const NOW = new Date().toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" });
@@ -52,6 +54,7 @@ export default function App() {
           </div>
         )}
         {tab === "lockin" && <LockInAdvisor />}
+        {tab === "league" && <League />}
       </main>
     </div>
   );
