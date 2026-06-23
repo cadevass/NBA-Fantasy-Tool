@@ -112,7 +112,7 @@ export default function BigBoard() {
 NAME: ${form.name}
 AGE: ${form.age} | POSITION(S): ${form.positions.join("/")} | HEIGHT: ${form.height}
 COLLEGE/COUNTRY: ${form.college}
-STATS: ${form.pts}pts / ${form.reb}reb / ${form.ast}ast / ${form.stl}stl / ${form.blk}blk
+STATS: ${form.pts}pts / ${form.reb}reb / ${form.ast}ast / ${form.stl}stl / ${form.blk}blk / ${form.threesMade || 0} 3PM / ${form.to || 0} TO
 PROJECTED NBA ROLE: ${form.projRole}
 LOCK-IN CEILING: ${form.ceilingRating}/5 | DYNASTY VALUE: ${form.dynastyRating}/5
 MY NOTES: ${form.notes}
@@ -347,7 +347,7 @@ Be direct and specific.`;
                 <div className="form-grid-3">
                   {["pts", "reb", "ast", "stl", "blk"].map(stat => (
                     <div key={stat} className="input-group">
-                      <label className="label">{stat.toUpperCase()}</label>
+                      <label className="label">{stat === "threesMade" ? "3PM" : stat === "to" ? "TO" : stat.toUpperCase()}</label>
                       <input className="input" type="number" step="0.1" placeholder="0.0" value={form[stat]} onChange={e => setForm(f => ({ ...f, [stat]: e.target.value }))} />
                     </div>
                   ))}
