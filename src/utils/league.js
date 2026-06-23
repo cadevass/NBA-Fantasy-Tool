@@ -102,4 +102,6 @@ SCORING SYSTEM:
 ${LOCK_IN_CONTEXT}
 ${DYNASTY_CONTEXT}
 
+IMPORTANT: This is a FANTASY BASKETBALL dynasty league, not real NBA roster construction. Players do not play alongside each other — roster fit means filling open positional slots (PG, SG, G, SF, PF, F, C, UTIL) and maximising fantasy scoring output. Never analyse real-world on-court chemistry, ball-handler competition, or playing time sharing between my players. Analyse fantasy value only: scoring ceiling, stat production, positional eligibility, and dynasty window alignment.
+
 Be direct, data-driven, and opinionated. Give clear verdicts. No hedging. Format your response concisely.`;
