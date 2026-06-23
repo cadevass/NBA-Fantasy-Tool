@@ -36,7 +36,7 @@ function assignTier(score, allScores) {
 function CeilingDots({ value }) {
   return (
     <div className="ceiling-dots">
-      {[1,2,3,4,5].map(i => (
+      {[1, 2, 3, 4, 5].map(i => (
         <div key={i} className={`ceiling-dot${i <= value ? " filled" : ""}`} />
       ))}
     </div>
@@ -207,7 +207,7 @@ Be direct and specific.`;
         <div className="card-header">
           <span className="card-title">Round {currentRound} Pick Tracker</span>
           <div className="flex gap-2" style={{ marginLeft: "auto" }}>
-            {[1,2,3].map(r => <button key={r} className={`btn btn-xs ${currentRound === r ? "btn-accent" : "btn-ghost"}`} onClick={() => setCurrentRound(r)}>R{r}</button>)}
+            {[1, 2, 3].map(r => <button key={r} className={`btn btn-xs ${currentRound === r ? "btn-accent" : "btn-ghost"}`} onClick={() => setCurrentRound(r)}>R{r}</button>)}
           </div>
         </div>
         <div className="card-body">
@@ -279,22 +279,31 @@ Be direct and specific.`;
                 <div className="stat-val"><span className="font-mono text-sm">{p._score}</span><div className="text-xs text-muted mt-1">Score</div></div>
                 <div>
                   <select className="select" style={{ fontSize: 11, padding: "3px 4px", width: 44 }} value={p.tier} onChange={e => overrideTier(p.id, e.target.value)}>
-                    {[1,2,3,4,5].map(t => <option key={t} value={t}>T{t}</option>)}
+                    {[1, 2, 3, 4, 5].map(t => <option key={t} value={t}>T{t}</option>)}
                   </select>
                 </div>
                 <div>
                   {!p.drafted ? (
-                    <div className="flex gap-2">
-                      <button className="btn btn-xs btn-accent" onClick={() => markDrafted(p.id, true)}><Check size={10} /> Mine</button>
-                      <button className="btn btn-xs btn-ghost" onClick={() => markDrafted(p.id, false)}>Gone</button>
+                    <div className="flex gap-2" style={{ marginRight: 8 }}>
+                      <button className="btn btn-xs btn-accent" onClick={() => markDrafted(p.id, true)} title="I drafted this player">
+                        <Check size={10} /> Mine
+                      </button>
+                      <button className="btn btn-xs btn-ghost" onClick={() => { if (window.confirm(`Mark ${p.name} as taken by another team?`)) markDrafted(p.id, false); }} title="Drafted by another team">
+                        Gone
+                      </button>
                     </div>
                   ) : (
                     <span className="text-xs text-muted">{p.draftedBy === "me" ? "✓ Drafted" : "Taken"}</span>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <button className="btn btn-ghost btn-xs" onClick={() => openEdit(p)}><Edit2 size={10} /></button>
-                  <button className="btn btn-danger btn-xs" onClick={() => deleteProspect(p.id)}><X size={10} /></button>
+                <div className="flex gap-2" style={{ marginLeft: 8 }}>
+                  <button className="btn btn-ghost btn-xs" onClick={() => openEdit(p)} title="Edit">
+                    <Edit2 size={10} />
+                  </button>
+                  <button className="btn btn-danger btn-xs" title="Delete"
+                    onClick={() => { if (window.confirm(`Delete ${p.name}?`)) deleteProspect(p.id); }}>
+                    <X size={10} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -337,7 +346,7 @@ Be direct and specific.`;
               <div>
                 <label className="label mb-1">Season Stats (per game)</label>
                 <div className="form-grid-3">
-                  {["pts","reb","ast","stl","blk"].map(stat => (
+                  {["pts", "reb", "ast", "stl", "blk"].map(stat => (
                     <div key={stat} className="input-group">
                       <label className="label">{stat.toUpperCase()}</label>
                       <input className="input" type="number" step="0.1" placeholder="0.0" value={form[stat]} onChange={e => setForm(f => ({ ...f, [stat]: e.target.value }))} />
