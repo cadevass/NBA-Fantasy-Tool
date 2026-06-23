@@ -12,7 +12,7 @@ export async function callClaude(messages, systemOverride = null) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: systemOverride || AI_SYSTEM_PROMPT,
       messages,
     }),
@@ -24,5 +24,7 @@ export async function callClaude(messages, systemOverride = null) {
   }
 
   const data = await response.json();
-  return data.content?.[0]?.text || "";
+
+  // Use pre-extracted text if available, otherwise fall back
+  return data._extractedText || data.content?.find(b => b.type === "text")?.text || "";
 }
