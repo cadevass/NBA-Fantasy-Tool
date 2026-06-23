@@ -106,9 +106,6 @@ export default function BigBoard() {
     setAiResult("");
     try {
       const rosterSummary = myTeam ? [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])].map(p => `${p.name} (${p.pos.join("/")}, ${p.team})`).join(", ") : "Roster not loaded yet";
-        ...MY_ROSTER.starters.map(p => `${p.name} (${p.pos.join("/")})`),
-        ...MY_ROSTER.taxi.map(p => `${p.name} (${p.pos.join("/")}) [Taxi]`),
-      ].join(", ");
 
       const prompt = `Analyse this 2026 NBA Draft prospect for my dynasty team:
 
