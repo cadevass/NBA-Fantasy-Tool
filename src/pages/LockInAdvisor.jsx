@@ -277,7 +277,7 @@ Be direct.`;
 
             <div className="card mt-3">
               <div className="card-header"><span className="card-title">My Starters</span></div>
-              {MY_ROSTER.starters.map(p => (
+              {(myTeam?.starters || []).map(p => (
                 <div key={p.name} style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
                   onClick={() => { setPlayerName(p.name); setUseCustom(false); }}>
                   <div>

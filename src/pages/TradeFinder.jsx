@@ -8,13 +8,6 @@ import { useSleeperContext } from "../context/SleeperContext";
 const PICK_YEARS = ["2026", "2027", "2028"];
 const PICK_ROUNDS = ["1st", "2nd", "3rd"];
 
-const ALL_MY_ASSETS = [
-  ...MY_ROSTER.starters.map(p => ({ type: "player", label: p.name, detail: `${p.pos.join("/")} · ${p.team}` })),
-  ...MY_ROSTER.bench.map(p => ({ type: "player", label: p.name, detail: `${p.pos.join("/")} · ${p.team} (Bench)` })),
-  ...MY_ROSTER.taxi.map(p => ({ type: "player", label: p.name, detail: `${p.pos.join("/")} · ${p.team} (Taxi)` })),
-  ...MY_ROSTER.draftCapital.map(d => ({ type: "pick", label: d, detail: "Draft capital" })),
-];
-
 function AssetTag({ asset, onRemove }) {
   return (
     <div style={{
