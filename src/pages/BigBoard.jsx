@@ -10,7 +10,7 @@ const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const EMPTY_PROSPECT = {
   name: "", age: "", college: "", positions: [],
   height: "", pts: "", reb: "", ast: "", stl: "", blk: "",
-  projRole: "", ceilingRating: 3, dynastyRating: 3, notes: "",
+  projRole: "", nbaTeam: "", ceilingRating: 3, dynastyRating: 3, notes: "",
 };
 
 function scoringAlgo(p) {
@@ -269,7 +269,7 @@ Be direct and specific.`;
                   <div className="player-name">{p.name}</div>
                   <div className="player-meta">
                     {p.positions?.map(pos => <span key={pos} className="pos-badge">{pos}</span>)}
-                    {p.college && <span>{p.college}</span>}
+                    {p.nbaTeam && <span style={{ color: "var(--accent-dim)", fontWeight: 600 }}>{p.nbaTeam}</span>}{p.college && <span>{p.college}</span>}
                     {p.age && <span> · Age {p.age}</span>}
                   </div>
                 </div>
@@ -356,6 +356,10 @@ Be direct and specific.`;
               <div className="input-group">
                 <label className="label">Projected NBA Role</label>
                 <input className="input" placeholder="e.g. Starting SF, two-way wing" value={form.projRole} onChange={e => setForm(f => ({ ...f, projRole: e.target.value }))} />
+              </div>
+              <div className="input-group">
+                <label className="label">NBA Draft Destination (team selected by)</label>
+                <input className="input" placeholder="e.g. WAS Wizards (Pick 1) — TBD" value={form.nbaTeam} onChange={e => setForm(f => ({ ...f, nbaTeam: e.target.value }))} />
               </div>
               <div className="form-grid">
                 <div className="input-group">
