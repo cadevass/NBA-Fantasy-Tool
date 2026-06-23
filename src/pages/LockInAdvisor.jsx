@@ -2,13 +2,14 @@ import { useState, useMemo } from "react";
 import { Lock, TrendingUp, Zap, Plus, X, RefreshCw } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { callClaude } from "../utils/api";
-import { calcFantasyScore, LOCK_IN_CONTEXT, MY_ROSTER } from "../utils/league";
+import { calcFantasyScore, LOCK_IN_CONTEXT } from "../utils/league";
+import { useSleeperContext } from "../context/SleeperContext";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const EMPTY_GAME = { pts: "", reb: "", ast: "", stl: "", blk: "", to: "", threesMade: "" };
 
-const ALL_ROSTER = [...MY_ROSTER.starters, ...MY_ROSTER.bench].map(p => p.name);
+// ALL_ROSTER now comes from Sleeper context
 
 function StatInput({ label, field, value, onChange }) {
   return (
@@ -22,6 +23,8 @@ function StatInput({ label, field, value, onChange }) {
 }
 
 export default function LockInAdvisor() {
+  const { myTeam } = useSleeperContext();
+  const ALL_ROSTER = myTeam ? [...myTeam.starters, ...myTeam.bench].map(p => p.name) : [];
   const [sessions, setSessions] = useLocalStorage("lockin_sessions", []);
   const [playerName, setPlayerName] = useState(ALL_ROSTER[0] || "");
   const [customPlayer, setCustomPlayer] = useState("");

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { RefreshCw, User, Star } from "lucide-react";
-import { useSleeperSync } from "../hooks/useSleeperSync";
+import { useSleeperContext } from "../context/SleeperContext";
 
 const POS_COLORS = {
   PG: "#1D5C8A", SG: "#2B7A3B", SF: "#D4850A",
@@ -10,11 +10,9 @@ const POS_COLORS = {
 function PosTag({ pos }) {
   return (
     <span style={{
-      display: "inline-block",
-      background: "var(--surface-2)",
-      border: "1px solid var(--border)",
-      borderRadius: 3, padding: "1px 5px",
-      fontSize: 10, fontWeight: 600,
+      display: "inline-block", background: "var(--surface-2)",
+      border: "1px solid var(--border)", borderRadius: 3,
+      padding: "1px 5px", fontSize: 10, fontWeight: 600,
       color: POS_COLORS[pos] || "var(--text-secondary)",
       fontFamily: "var(--font-mono)", marginRight: 2,
     }}>{pos}</span>
@@ -33,6 +31,9 @@ function PlayerRow({ player, slot }) {
         <div>
           <span style={{ fontWeight: 500 }}>{player.name}</span>
           {isFA && <span style={{ marginLeft: 6, fontSize: 10, color: "var(--red)", fontWeight: 600 }}>FA</span>}
+          {player.status && player.status !== "Active" && (
+            <span style={{ marginLeft: 6, fontSize: 10, color: "var(--red)" }}>{player.status}</span>
+          )}
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -45,7 +46,6 @@ function PlayerRow({ player, slot }) {
 
 function TeamCard({ team, expanded, onToggle }) {
   const STARTER_SLOTS = ["PG", "SG", "G", "SF", "PF", "F", "C", "UTIL", "UTIL"];
-
   return (
     <div className="card" style={{ marginBottom: 12 }}>
       <div className="card-header" style={{ cursor: "pointer" }} onClick={onToggle}>
@@ -63,15 +63,12 @@ function TeamCard({ team, expanded, onToggle }) {
           {team.starters.length + team.bench.length + team.taxi.length} players · {expanded ? "▲" : "▼"}
         </div>
       </div>
-
       {expanded && (
         <div>
           <div style={{ padding: "6px 12px", background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
             <span className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Starters</span>
           </div>
-          {team.starters.map((p, i) => (
-            <PlayerRow key={p.id} player={p} slot={STARTER_SLOTS[i]} />
-          ))}
+          {team.starters.map((p, i) => <PlayerRow key={p.id} player={p} slot={STARTER_SLOTS[i]} />)}
 
           {team.bench.length > 0 && <>
             <div style={{ padding: "6px 12px", background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
@@ -100,23 +97,21 @@ function TeamCard({ team, expanded, onToggle }) {
 }
 
 export default function League() {
-  const { sync, loading, error, leagueData } = useSleeperSync();
+  const { teams, loading, error, lastSynced, sync } = useSleeperContext();
   const [expandedId, setExpandedId] = useState(null);
-
-  async function handleSync() {
-    const teams = await sync();
-    if (teams) setExpandedId(teams.find(t => t.isMe)?.rosterId ?? null);
-  }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <div>
           <div className="font-semibold" style={{ fontSize: 16 }}>League Rosters</div>
-          <div className="text-sm text-muted mt-1">Live sync from Sleeper · The Backshot Dynasty</div>
+          <div className="text-sm text-muted mt-1">
+            Live sync from Sleeper · The Backshot Dynasty
+            {lastSynced && <span> · Last synced {lastSynced}</span>}
+          </div>
         </div>
-        <button className="btn btn-accent btn-sm" onClick={handleSync} disabled={loading}>
-          {loading ? <><span className="spinner" /> Syncing...</> : <><RefreshCw size={13} /> Sync from Sleeper</>}
+        <button className="btn btn-accent btn-sm" onClick={sync} disabled={loading}>
+          {loading ? <><span className="spinner" /> Syncing...</> : <><RefreshCw size={13} /> Sync</>}
         </button>
       </div>
 
@@ -126,17 +121,26 @@ export default function League() {
         </div>
       )}
 
-      {!leagueData && !loading && (
+      {loading && !teams && (
         <div className="card">
           <div className="card-body" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
-            <User size={36} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
-            <div className="font-semibold" style={{ fontSize: 14 }}>No data loaded yet</div>
-            <div className="text-sm mt-1">Hit "Sync from Sleeper" to pull live rosters</div>
+            <span className="spinner" style={{ margin: "0 auto 12px", display: "block", width: 24, height: 24 }} />
+            <div className="text-sm">Fetching rosters from Sleeper...</div>
           </div>
         </div>
       )}
 
-      {leagueData && leagueData.map(team => (
+      {!loading && !teams && (
+        <div className="card">
+          <div className="card-body" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
+            <User size={36} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
+            <div className="font-semibold" style={{ fontSize: 14 }}>No data loaded</div>
+            <div className="text-sm mt-1">Hit Sync to pull live rosters</div>
+          </div>
+        </div>
+      )}
+
+      {teams && teams.map(team => (
         <TeamCard
           key={team.rosterId}
           team={team}

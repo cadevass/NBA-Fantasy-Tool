@@ -1,4 +1,5 @@
-import { MY_ROSTER } from "../utils/league";
+import { useSleeperContext } from "../context/SleeperContext";
+import { RefreshCw } from "lucide-react";
 
 const SECTION_COLORS = {
   starters: "var(--green)",
@@ -14,10 +15,14 @@ function PlayerChip({ player, section }) {
     }}>
       <div>
         <div style={{ fontWeight: 500, fontSize: 13 }}>{player.name}</div>
-        {player.note && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{player.note}</div>}
+        {player.status && player.status !== "Active" && (
+          <div style={{ fontSize: 10, color: "var(--red)", marginTop: 1 }}>{player.status}</div>
+        )}
       </div>
       <div style={{ textAlign: "right" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: SECTION_COLORS[section] }}>{player.pos.join("/")}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: SECTION_COLORS[section] }}>
+          {player.pos.join("/")}
+        </div>
         <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{player.team}</div>
       </div>
     </div>
@@ -25,36 +30,51 @@ function PlayerChip({ player, section }) {
 }
 
 export default function RosterPanel() {
+  const { myTeam, loading, lastSynced, sync } = useSleeperContext();
+
+  if (loading && !myTeam) {
+    return (
+      <div className="card" style={{ position: "sticky", top: 72 }}>
+        <div className="card-body" style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
+          <span className="spinner" style={{ margin: "0 auto 8px", display: "block" }} />
+          <div className="text-sm">Syncing from Sleeper...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!myTeam) return null;
+
   return (
     <div className="card" style={{ position: "sticky", top: 72 }}>
       <div className="card-header">
-        <span className="card-title">My Roster</span>
-        <span className="text-xs text-muted" style={{ marginLeft: "auto" }}>The Backshot Dynasty</span>
+        <div>
+          <span className="card-title">My Roster</span>
+          {lastSynced && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Synced {lastSynced}</div>}
+        </div>
+        <button className="btn btn-ghost btn-xs" style={{ marginLeft: "auto" }} onClick={sync} disabled={loading} title="Refresh">
+          <RefreshCw size={11} />
+        </button>
       </div>
+
       <div style={{ borderBottom: "1px solid var(--border)", padding: "6px 12px" }}>
         <div className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, marginBottom: 4 }}>Starters</div>
-        {MY_ROSTER.starters.map(p => <PlayerChip key={p.name} player={p} section="starters" />)}
+        {myTeam.starters.map(p => <PlayerChip key={p.id} player={p} section="starters" />)}
       </div>
-      <div style={{ borderBottom: "1px solid var(--border)", padding: "6px 12px" }}>
-        <div className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, marginBottom: 4 }}>Bench</div>
-        {MY_ROSTER.bench.map(p => <PlayerChip key={p.name} player={p} section="bench" />)}
-      </div>
-      <div style={{ padding: "6px 12px" }}>
-        <div className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, marginBottom: 4 }}>Taxi Squad</div>
-        {MY_ROSTER.taxi.map(p => <PlayerChip key={p.name} player={p} section="taxi" />)}
-      </div>
-      <div style={{ borderTop: "1px solid var(--border)", padding: "10px 12px" }}>
-        <div className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, marginBottom: 6 }}>Draft Capital</div>
-        <div className="flex gap-1" style={{ flexWrap: "wrap" }}>
-          {MY_ROSTER.draftCapital.map(d => (
-            <span key={d} style={{
-              display: "inline-block", background: "var(--accent-light)", border: "1px solid #F5D98A",
-              borderRadius: 3, padding: "2px 6px", fontSize: 10, fontFamily: "var(--font-mono)",
-              color: "var(--accent-dim)", fontWeight: 600,
-            }}>{d}</span>
-          ))}
+
+      {myTeam.bench.length > 0 && (
+        <div style={{ borderBottom: "1px solid var(--border)", padding: "6px 12px" }}>
+          <div className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, marginBottom: 4 }}>Bench</div>
+          {myTeam.bench.map(p => <PlayerChip key={p.id} player={p} section="bench" />)}
         </div>
-      </div>
+      )}
+
+      {myTeam.taxi.length > 0 && (
+        <div style={{ padding: "6px 12px" }}>
+          <div className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, marginBottom: 4 }}>Taxi Squad</div>
+          {myTeam.taxi.map(p => <PlayerChip key={p.id} player={p} section="taxi" />)}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { Plus, X, Newspaper, Zap, AlertTriangle, Check, Edit2 } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { callClaude } from "../utils/api";
-import { MY_ROSTER, DYNASTY_CONTEXT, LOCK_IN_CONTEXT, LEAGUE_CONFIG } from "../utils/league";
+import { DYNASTY_CONTEXT, LOCK_IN_CONTEXT, LEAGUE_CONFIG } from "../utils/league";
+import { useSleeperContext } from "../context/SleeperContext";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 
@@ -72,6 +73,7 @@ export default function BigBoard() {
   const [aiResult, setAiResult] = useState("");
   const [newsText, setNewsText] = useState("");
   const [newsLoading, setNewsLoading] = useState(false);
+  const { myTeam } = useSleeperContext();
   const [editingId, setEditingId] = useState(null);
 
   const rankedProspects = useMemo(() => {
@@ -103,7 +105,7 @@ export default function BigBoard() {
     setAiLoading(true);
     setAiResult("");
     try {
-      const rosterSummary = [
+      const rosterSummary = myTeam ? [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])].map(p => `${p.name} (${p.pos.join("/")}, ${p.team})`).join(", ") : "Roster not loaded yet";
         ...MY_ROSTER.starters.map(p => `${p.name} (${p.pos.join("/")})`),
         ...MY_ROSTER.taxi.map(p => `${p.name} (${p.pos.join("/")}) [Taxi]`),
       ].join(", ");

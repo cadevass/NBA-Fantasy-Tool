@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Plus, X, Zap, RefreshCw } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { callClaude } from "../utils/api";
-import { MY_ROSTER, DYNASTY_CONTEXT, LOCK_IN_CONTEXT } from "../utils/league";
+import { DYNASTY_CONTEXT, LOCK_IN_CONTEXT } from "../utils/league";
+import { useSleeperContext } from "../context/SleeperContext";
 
 const PICK_YEARS = ["2026", "2027", "2028"];
 const PICK_ROUNDS = ["1st", "2nd", "3rd"];
@@ -29,7 +30,7 @@ function AssetTag({ asset, onRemove }) {
   );
 }
 
-function AssetPicker({ side, selected, onAdd, onRemove, label }) {
+function AssetPicker({ side, selected, onAdd, onRemove, label, myAssets }) {
   const [mode, setMode] = useState("player");
   const [customName, setCustomName] = useState("");
   const [customDetail, setCustomDetail] = useState("");
@@ -45,7 +46,7 @@ function AssetPicker({ side, selected, onAdd, onRemove, label }) {
     setCustomName(""); setCustomDetail("");
   }
 
-  const filteredAssets = ALL_MY_ASSETS.filter(a => a.label.toLowerCase().includes(search.toLowerCase()));
+  const filteredAssets = (myAssets || ALL_MY_ASSETS).filter(a => a.label.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div>
@@ -116,6 +117,14 @@ function extractVerdict(text) {
 }
 
 export default function TradeFinder() {
+  const { myTeam, tradedPicks } = useSleeperContext();
+  const myAssets = myTeam
+    ? [
+        ...myTeam.starters.map(p => ({ type: "player", label: p.name, detail: `${p.pos.join("/")} · ${p.team}` })),
+        ...myTeam.bench.map(p => ({ type: "player", label: p.name, detail: `${p.pos.join("/")} · ${p.team} (Bench)` })),
+        ...(myTeam.taxi || []).map(p => ({ type: "player", label: p.name, detail: `${p.pos.join("/")} · ${p.team} (Taxi)` })),
+      ]
+    : ALL_MY_ASSETS;
   const [history, setHistory] = useLocalStorage("trade_history", []);
   const [giving, setGiving] = useState([]);
   const [receiving, setReceiving] = useState([]);
@@ -187,10 +196,10 @@ Be direct and opinionated.`;
             <div className="card-body flex-col gap-4">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <div style={{ borderRight: "1px solid var(--border)", paddingRight: 20 }}>
-                  <AssetPicker side="give" selected={giving} onAdd={addAsset} onRemove={removeGiving} label="I Give" />
+                  <AssetPicker side="give" selected={giving} onAdd={addAsset} onRemove={removeGiving} label="I Give" myAssets={myAssets} />
                 </div>
                 <div>
-                  <AssetPicker side="receive" selected={receiving} onAdd={addAsset} onRemove={removeReceiving} label="I Receive" />
+                  <AssetPicker side="receive" selected={receiving} onAdd={addAsset} onRemove={removeReceiving} label="I Receive" myAssets={myAssets} />
                 </div>
               </div>
               <div className="input-group">
