@@ -210,7 +210,7 @@ Be direct and specific.`;
           </div>
         </div>
         <div className="card-body">
-          <PickCountdown currentPick={currentPick} totalPicks={10} myPick={currentRound === 1 ? 8 : currentRound === 2 ? 3 : 8} />
+          <PickCountdown currentPick={currentPick} totalPicks={10} myPick={currentRound === 1 ? 8 : currentRound === 2 ? 8 : 8} />
           <div className="text-xs text-muted mt-2">
             My picks: <strong>1.08</strong> · <strong>2.08</strong> · <strong>3.08</strong>
             &nbsp;·&nbsp;
