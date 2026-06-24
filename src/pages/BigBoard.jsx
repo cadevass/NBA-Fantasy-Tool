@@ -82,13 +82,17 @@ export default function BigBoard() {
     return scored
       .map(p => ({ ...p, tier: p.manualTier ?? assignTier(p._score, allScores) }))
       .sort((a, b) => {
-      const aRank = a.manualRank || null;
-      const bRank = b.manualRank || null;
-      if (aRank && bRank) return aRank - bRank;
-      if (aRank) return -1;
-      if (bRank) return 1;
-      return b._score - a._score;
-    });
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return b._score - a._score;
+      });
+
+
+
+
+
+
+
+
   }, [prospects]);
 
   const scarcityAlerts = useMemo(() => {
