@@ -81,7 +81,14 @@ export default function BigBoard() {
     const allScores = scored.map(p => p._score);
     return scored
       .map(p => ({ ...p, tier: p.manualTier ?? assignTier(p._score, allScores) }))
-      .sort((a, b) => b._score - a._score);
+      .sort((a, b) => {
+      const aRank = a.manualRank || null;
+      const bRank = b.manualRank || null;
+      if (aRank && bRank) return aRank - bRank;
+      if (aRank) return -1;
+      if (bRank) return 1;
+      return b._score - a._score;
+    });
   }, [prospects]);
 
   const scarcityAlerts = useMemo(() => {
@@ -151,6 +158,7 @@ Be direct. No fluff.`;
   function markDrafted(id, byMe) { setProspects(prev => prev.map(p => p.id === id ? { ...p, drafted: true, draftedBy: byMe ? "me" : "other" } : p)); setCurrentPick(n => n + 1); }
   function deleteProspect(id) { setProspects(prev => prev.filter(p => p.id !== id)); }
   function overrideTier(id, tier) { setProspects(prev => prev.map(p => p.id === id ? { ...p, manualTier: parseInt(tier) } : p)); }
+  function overrideRank(id, rank) { setProspects(prev => prev.map(p => p.id === id ? { ...p, manualRank: rank ? parseInt(rank) : null } : p)); }
 
   async function processNews() {
     if (!newsText.trim()) return;
@@ -277,7 +285,8 @@ Be direct and specific.`;
                 <div className="stat-val"><CeilingDots value={p.ceilingRating} /><div className="text-xs text-muted mt-1">Ceiling</div></div>
                 <div className="stat-val"><span className="font-mono text-sm">{p._score}</span><div className="text-xs text-muted mt-1">Score</div></div>
                 <div>
-                  <select className="select" style={{ fontSize: 11, padding: "3px 4px", width: 44 }} value={p.tier} onChange={e => overrideTier(p.id, e.target.value)}>
+                  <input type="number" min={1} max={99} placeholder="#" title="Pin to rank position" value={p.manualRank || ""} onChange={e => overrideRank(p.id, e.target.value)} style={{ width: 36, fontSize: 11, padding: "3px 4px", border: "1px solid var(--border)", borderRadius: "var(--radius)", textAlign: "center", fontFamily: "var(--font-mono)" }} />
+                <select className="select" style={{ fontSize: 11, padding: "3px 4px", width: 44 }} value={p.tier} onChange={e => overrideTier(p.id, e.target.value)}>
                     {[1, 2, 3, 4, 5].map(t => <option key={t} value={t}>T{t}</option>)}
                   </select>
                 </div>
