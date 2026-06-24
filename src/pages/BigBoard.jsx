@@ -285,7 +285,7 @@ Be direct and specific.`;
                 <div className="stat-val"><CeilingDots value={p.ceilingRating} /><div className="text-xs text-muted mt-1">Ceiling</div></div>
                 <div className="stat-val"><span className="font-mono text-sm">{p._score}</span><div className="text-xs text-muted mt-1">Score</div></div>
                 <div>
-                  <input type="number" min={1} max={99} placeholder="#" title="Pin to rank position" value={p.manualRank || ""} onChange={e => overrideRank(p.id, e.target.value)} style={{ width: 36, fontSize: 11, padding: "3px 4px", border: "1px solid var(--border)", borderRadius: "var(--radius)", textAlign: "center", fontFamily: "var(--font-mono)" }} />
+                  
                 <select className="select" style={{ fontSize: 11, padding: "3px 4px", width: 44 }} value={p.tier} onChange={e => overrideTier(p.id, e.target.value)}>
                     {[1, 2, 3, 4, 5].map(t => <option key={t} value={t}>T{t}</option>)}
                   </select>
