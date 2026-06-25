@@ -121,7 +121,7 @@ export default function TradeFinder() {
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
 
-  const otherTeams = (teams || []).filter(t => !t.isMe);
+  const otherTeams = (teams || []).filter(t => !t.isMe && t.ownerId);
   const selectedTeam = otherTeams.find(t => t.rosterId === selectedTeamId);
   const selectedTeamPlayers = selectedTeam
     ? [...selectedTeam.starters, ...selectedTeam.bench, ...(selectedTeam.taxi || [])]
@@ -373,7 +373,7 @@ TRADE_3:
                 </div>
 
                 {/* 3-way */}
-                {otherTeams.length > 1 && (
+                {selectedTeamId && otherTeams.length > 1 && (
                   <div>
                     <div className="label mb-1">Add 3rd Team</div>
                     <div className="flex gap-1" style={{ flexWrap: "wrap" }}>

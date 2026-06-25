@@ -1,7 +1,7 @@
 // NBA Stats API utility
 // Uses a CORS proxy to access stats.nba.com
 
-const CORS_PROXY = "https://corsproxy.io/?";
+const CORS_PROXY = "https://corsproxy.io/?url=";
 const NBA_STATS_BASE = "https://stats.nba.com/stats";
 
 const NBA_HEADERS = {
