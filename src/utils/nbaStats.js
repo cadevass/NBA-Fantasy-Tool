@@ -33,9 +33,9 @@ export async function fetchPlayerSeasonStats() {
       const json = await res.json();
       const players = json.data || [];
       allPlayers = [...allPlayers, ...players];
-      hasMore = players.length === 100;
+      hasMore = players.length === 50;
       page++;
-      if (page > 10) break; // safety cap
+      if (page > 20) break; // safety cap
     }
 
     // Convert totals to per-game
