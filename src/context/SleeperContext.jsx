@@ -102,6 +102,7 @@ export function SleeperProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
+  const [startupDraft, setStartupDraft] = useState([]);
 
   async function sync() {
     setLoading(true);
@@ -114,6 +115,8 @@ export function SleeperProvider({ children }) {
       setTradedPicks(picks);
       setMyTeam(teamData.find(t => t.isMe) || null);
       setLastSynced(new Date().toLocaleTimeString());
+      const draft = await fetchStartupDraft();
+      setStartupDraft(draft);
       localStorage.setItem(LEAGUE_CACHE_KEY, JSON.stringify(teamData));
     } catch (e) {
       setError(e.message);
@@ -133,7 +136,7 @@ export function SleeperProvider({ children }) {
   }, [teams]);
 
   return (
-    <SleeperContext.Provider value={{ players, teams, myTeam, tradedPicks, loading, error, lastSynced, sync }}>
+    <SleeperContext.Provider value={{ players, teams, myTeam, tradedPicks, startupDraft, loading, error, lastSynced, sync }}>
       {children}
     </SleeperContext.Provider>
   );

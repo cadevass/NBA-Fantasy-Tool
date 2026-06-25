@@ -7,6 +7,7 @@ import { useSleeperContext } from "../context/SleeperContext";
 import { MY_PICKS, getPickValue, getAgeCurveMultiplier, getWindowAlignment } from "../utils/pickValues";
 import { getTeamContexts, setTeamContext, getTeamContext, TEAM_STATUSES } from "../utils/teamContext";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
+import { buildDraftContext } from "../utils/sleeperDraft";
 
 const PICK_YEARS = ["2026", "2027", "2028"];
 const PICK_ROUNDS = ["1st", "2nd", "3rd"];
@@ -221,7 +222,8 @@ const VERDICT_STYLES = {
 };
 
 export default function TradeFinder() {
-  const { myTeam, teams } = useSleeperContext();
+  const { myTeam, teams, startupDraft } = useSleeperContext();
+  const { buildDraftContext: buildCtx } = require("../utils/sleeperDraft");
   const [history, setHistory] = useLocalStorage("trade_history_v2", []);
   const [nbaPlayers, setNbaPlayers] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -300,6 +302,9 @@ I RECEIVE:
 ${recStr}
 
 OTHER TEAM: ${teamCtx}
+STARTUP DRAFT CONTEXT (who drafted who and at what pick — use this to gauge how much each manager values their players):
+${buildDraftContext(startupDraft, teams || [])};
+CONTEXT: ${otherContext || "None"}
 CONTEXT: ${otherContext || "None"}
 
 ${DYNASTY_CONTEXT}
@@ -395,7 +400,12 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
       const prompt = `You are a dynasty fantasy basketball trade analyst. Search the web for current player values and news, then suggest 3 realistic trade proposals.
 
 MY ROSTER: ${myRoster}
+      const draftCtx = buildDraftContext(startupDraft, teams || []);
+      const prompt = `You are a dynasty fantasy basketball trade analyst. Search the web for current player values and news, then suggest 3 realistic trade proposals.
+MY ROSTER: ${myRoster}
 MY DRAFT CAPITAL: ${myPicks}
+STARTUP DRAFT CONTEXT (who drafted who at what pick — critical for gauging untouchable players):
+${draftCtx}
 
 ${targetTeam
   ? `TARGET TEAM: ${targetTeam.teamName || targetTeam.username} (Status: ${teamStatus})\nTHEIR ROSTER: ${theirRoster}`
