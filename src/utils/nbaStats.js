@@ -1,6 +1,6 @@
 const BASE_URL = "https://api.server.nbaapi.com/api";
-const CACHE_KEY = "nba_stats_2024";
-const CACHE_DATE_KEY = "nba_stats_2024_date";
+const CACHE_KEY = "nba_stats_2025";
+const CACHE_DATE_KEY = "nba_stats_2025_date";
 
 function getCached() {
   try {
@@ -29,7 +29,7 @@ export async function fetchPlayerSeasonStats() {
     let hasMore = true;
 
     while (hasMore) {
-      const res = await fetch(`${BASE_URL}/playertotals?season=2024&pageSize=100&page=${page}`);
+      const res = await fetch(`${BASE_URL}/playertotals?season=2025&pageSize=100&page=${page}`);
       const json = await res.json();
       const players = json.data || [];
       allPlayers = [...allPlayers, ...players];
