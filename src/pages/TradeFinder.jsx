@@ -304,6 +304,8 @@ CONTEXT: ${otherContext || "None"}
 
 ${DYNASTY_CONTEXT}
 
+CRITICAL INSTRUCTION: Your response must start with the structured scoring block below. No headers, no markdown, no preamble. Start your response with DYNASTY_VALUE_DELTA on the very first line.
+
 IMPORTANT: Fantasy dynasty only. Positional slots and scoring output — not real NBA roster construction.
 
 Score each 0-100 with 1-2 sentences reasoning:
