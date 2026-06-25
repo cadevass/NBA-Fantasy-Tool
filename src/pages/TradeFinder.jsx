@@ -399,12 +399,22 @@ MY DRAFT CAPITAL: ${myPicks}
 
 ${targetTeam
   ? `TARGET TEAM: ${targetTeam.teamName || targetTeam.username} (Status: ${teamStatus})\nTHEIR ROSTER: ${theirRoster}`
-  : `FIND BEST TRADES ACROSS ALL TEAMS:\n${otherTeams.map(t => `${t.teamName || t.username}: ${getTeamContext(t.rosterId).status || "unknown"}`).join(", ")}`
+  : `FIND BEST TRADES ACROSS ALL TEAMS:
+${otherTeams.map(t => {
+            const roster = [...t.starters, ...t.bench, ...(t.taxi||[])].map(p => p.name).join(", ");
+            return `${t.teamName||t.username} (${getTeamContext(t.rosterId).status||"unknown"}): ${roster}`;
+          }).join("
+")}`
 }
 
 ${DYNASTY_CONTEXT}
 
-Generate 3 realistic trade proposals. Format each as:
+CRITICAL RULES:
+1. You may ONLY suggest players that appear in MY ROSTER or THEIR ROSTER lists above. Never invent or suggest players not listed.
+2. This is FANTASY basketball only — player value = fantasy scoring output and dynasty window. Never mention real basketball fit, team chemistry, or on-court roles.
+3. Only suggest trades the other team would realistically accept based on their status and needs.
+
+Generate 3 realistic trade proposals using ONLY the players listed above. Format each as:
 
 TRADE_1:
 I_GIVE: [assets]
