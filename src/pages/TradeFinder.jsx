@@ -372,6 +372,7 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
       };
     } catch { return null; }
   }
+  async function getSuggestions() {
     if (suggestTeamId === null) return;
     setSuggestLoading(true); setSuggestions(null);
     try {
