@@ -403,8 +403,7 @@ ${targetTeam
 ${otherTeams.map(t => {
             const roster = [...t.starters, ...t.bench, ...(t.taxi||[])].map(p => p.name).join(", ");
             return `${t.teamName||t.username} (${getTeamContext(t.rosterId).status||"unknown"}): ${roster}`;
-          }).join("
-")}`
+          }).join("\n")}`
 }
 
 ${DYNASTY_CONTEXT}
