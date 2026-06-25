@@ -121,7 +121,7 @@ export default function TradeFinder() {
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
 
-  const otherTeams = (teams || []).filter(t => !t.isMe && t.ownerId);
+  const otherTeams = (teams || []).filter(t => !t.isMe && t.ownerId && t.username !== "Unknown");
   const selectedTeam = otherTeams.find(t => t.rosterId === selectedTeamId);
   const selectedTeamPlayers = selectedTeam
     ? [...selectedTeam.starters, ...selectedTeam.bench, ...(selectedTeam.taxi || [])]
@@ -234,10 +234,11 @@ Format your response EXACTLY as shown above with the pipe separators so it can b
 
   function parseEvaluation(text) {
     try {
+      const clean = (str) => str?.replace(/\**/g, "").replace(/\*/g, "").trim();
       const extract = (key) => {
         const regex = new RegExp(`${key}:\\s*\\[?(\\d+)\\]?\\s*\\|?\\s*(.*)`, 'i');
         const match = text.match(regex);
-        return match ? { score: parseInt(match[1]), reasoning: match[2]?.trim() } : { score: 50, reasoning: "" };
+        return match ? { score: parseInt(match[1]), reasoning: clean(match[2]) } : { score: 50, reasoning: "" };
       };
       const verdictMatch = text.match(/VERDICT:\s*\[?(ACCEPT|DECLINE|COUNTER)\]?/i);
       const summaryMatch = text.match(/SUMMARY:\s*(.+?)(?=COUNTER_SUGGESTION:|$)/is);
@@ -252,8 +253,8 @@ Format your response EXACTLY as shown above with the pipe separators so it can b
         rosterConstruction: extract("ROSTER_CONSTRUCTION"),
         overall: overallMatch ? parseInt(overallMatch[1]) : 50,
         verdict: verdictMatch ? verdictMatch[1].toUpperCase() : null,
-        summary: summaryMatch ? summaryMatch[1].trim() : text.slice(0, 300),
-        counter: counterMatch ? counterMatch[1].trim() : null,
+        summary: clean(summaryMatch ? summaryMatch[1] : text.slice(0, 300)),
+        counter: clean(counterMatch ? counterMatch[1] : null),
       };
     } catch {
       return null;
