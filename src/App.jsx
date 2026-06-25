@@ -3,6 +3,7 @@ import BigBoard from "./pages/BigBoard";
 import TradeFinder from "./pages/TradeFinder";
 import LockInAdvisor from "./pages/LockInAdvisor";
 import League from "./pages/League";
+import DraftNight from "./pages/DraftNight";
 import RosterPanel from "./components/RosterPanel";
 
 const TABS = [
@@ -10,6 +11,7 @@ const TABS = [
   { id: "trade", label: "Trade Evaluator" },
   { id: "lockin", label: "Lock-In Advisor" },
   { id: "league", label: "League" },
+  { id: "draft", label: "🏀 Draft Night" },
 ];
 
 const NOW = new Date().toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" });
@@ -55,6 +57,7 @@ export default function App() {
         )}
         {tab === "lockin" && <LockInAdvisor />}
         {tab === "league" && <League />}
+        {tab === "draft" && <DraftNight />}
       </main>
     </div>
   );
