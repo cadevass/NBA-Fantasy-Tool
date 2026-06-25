@@ -396,15 +396,11 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
 
       const myPicks = Object.values(MY_PICKS).map(p => `${p.label} (value: ${p.givingValue})`).join(", ");
       const teamStatus = targetTeam ? getTeamContext(targetTeam.rosterId).status : "various";
-
-      const prompt = `You are a dynasty fantasy basketball trade analyst. Search the web for current player values and news, then suggest 3 realistic trade proposals.
-
-MY ROSTER: ${myRoster}
       const draftCtx = buildDraftContext(startupDraft, teams || []);
       const prompt = `You are a dynasty fantasy basketball trade analyst. Search the web for current player values and news, then suggest 3 realistic trade proposals.
 MY ROSTER: ${myRoster}
 MY DRAFT CAPITAL: ${myPicks}
-STARTUP DRAFT CONTEXT (who drafted who at what pick — critical for gauging untouchable players):
+STARTUP DRAFT CONTEXT:
 ${draftCtx}
 
 ${targetTeam
