@@ -223,7 +223,6 @@ const VERDICT_STYLES = {
 
 export default function TradeFinder() {
   const { myTeam, teams, startupDraft } = useSleeperContext();
-  const { buildDraftContext: buildCtx } = require("../utils/sleeperDraft");
   const [history, setHistory] = useLocalStorage("trade_history_v2", []);
   const [nbaPlayers, setNbaPlayers] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
