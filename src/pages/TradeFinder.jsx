@@ -342,30 +342,36 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
 
   function parseEval(text) {
     try {
-      const clean = s => s?.replace(/\*\*/g, "").replace(/\*/g, "").trim();
-      const extract = key => {
-        const m = text.match(new RegExp(`${key}[^\d]*(\d+)[^|\n]*\|?([^\n]*)`, "i"));
-        return m ? { score: parseInt(m[1]), reasoning: clean(m[2]) } : { score: 50, reasoning: "" };
+      const clean = s => s?.replace(/\*\*/g, "").replace(/\*/g, "").replace(/#+/g, "").trim();
+      const extractScore = (key) => {
+        const lines = text.split("\n");
+        for (const line of lines) {
+          if (line.toUpperCase().includes(key.toUpperCase())) {
+            const numMatch = line.match(/(\d+)/);
+            const pipeIdx = line.indexOf("|");
+            const reasoning = pipeIdx !== -1 ? clean(line.slice(pipeIdx + 1)) : "";
+            if (numMatch) return { score: parseInt(numMatch[1]), reasoning };
+          }
+        }
+        return { score: 50, reasoning: "" };
       };
-      const verdictM = text.match(/VERDICT:\s*\[?(ACCEPT|DECLINE|COUNTER)\]?/i);
+      const verdictM = text.match(/VERDICT:\s*(ACCEPT|DECLINE|COUNTER)/i);
       const summaryM = text.match(/SUMMARY:\s*(.+?)(?=COUNTER_SUGGESTION:|$)/is);
       const counterM = text.match(/COUNTER_SUGGESTION:\s*(.+?)$/is);
-      const overallM = text.match(/OVERALL_SCORE:\s*\[?(\d+)\]?/i);
+      const overallM = text.match(/OVERALL_SCORE:\s*(\d+)/i);
       return {
-        dynastyValue: extract("DYNASTY_VALUE_DELTA"),
-        immediateImpact: extract("IMMEDIATE_IMPACT"),
-        ageCurve: extract("AGE_CURVE_FIT"),
-        lockInCeiling: extract("LOCK_IN_CEILING"),
-        rosterConstruction: extract("ROSTER_CONSTRUCTION"),
+        dynastyValue: extractScore("DYNASTY_VALUE_DELTA"),
+        immediateImpact: extractScore("IMMEDIATE_IMPACT"),
+        ageCurve: extractScore("AGE_CURVE_FIT"),
+        lockInCeiling: extractScore("LOCK_IN_CEILING"),
+        rosterConstruction: extractScore("ROSTER_CONSTRUCTION"),
         overall: overallM ? parseInt(overallM[1]) : 50,
         verdict: verdictM ? verdictM[1].toUpperCase() : null,
-        summary: clean(summaryM?.[1]) || clean(text.slice(0, 300)),
+        summary: clean(summaryM?.[1]) || clean(text.slice(0, 400)),
         counter: clean(counterM?.[1]) || null,
       };
     } catch { return null; }
   }
-
-  async function getSuggestions() {
     if (suggestTeamId === null) return;
     setSuggestLoading(true); setSuggestions(null);
     try {
