@@ -205,9 +205,9 @@ function DimensionRow({ label, score, reasoning }) {
         </div>
         {reasoning && <ChevronDown size={12} style={{ color: "var(--text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "0.2s" }} />}
       </div>
-      {expanded && reasoning && (
+      {expanded && (
         <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6, paddingLeft: 4 }}>
-          {reasoning}
+          {reasoning || "See overall summary for context."}
         </div>
       )}
     </div>
