@@ -17,6 +17,32 @@ export default {
     try {
       const body = await request.json();
 
+      // NBA Stats proxy request
+      if (body.type === "nba_stats") {
+        const nbaUrl = `https://stats.nba.com/stats/leaguedashplayerstats?Season=${body.season || "2024-25"}&SeasonType=Regular+Season&PerMode=PerGame&MeasureType=Base&LastNGames=0&Month=0&OpponentTeamID=0&PaceAdjust=N&PlusMinus=N&Rank=N&LeagueID=00`;
+        
+        const nbaRes = await fetch(nbaUrl, {
+          headers: {
+            "Accept": "application/json",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://www.nba.com",
+            "Referer": "https://www.nba.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "x-nba-stats-origin": "stats",
+            "x-nba-stats-token": "true",
+          },
+        });
+
+        const data = await nbaRes.json();
+        return new Response(JSON.stringify(data), {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+
+      // Claude API request
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -41,8 +67,6 @@ export default {
       });
 
       const data = await response.json();
-
-      // Extract all text blocks including after tool use
       const textContent = data.content
         ?.filter(block => block.type === "text")
         ?.map(block => block.text)
