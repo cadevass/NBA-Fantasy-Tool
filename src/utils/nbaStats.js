@@ -23,36 +23,55 @@ export async function fetchPlayerSeasonStats() {
   if (cached) return cached;
 
   try {
-    // Fetch all pages
-    let allPlayers = [];
+    let allRows = [];
     let page = 1;
     let hasMore = true;
 
     while (hasMore) {
-      const res = await fetch(`${BASE_URL}/playertotals?season=2025&pageSize=100&page=${page}`);
+      const res = await fetch(`${BASE_URL}/playertotals?season=2025&pageSize=50&page=${page}`);
       const json = await res.json();
-      const players = json.data || [];
-      allPlayers = [...allPlayers, ...players];
-      hasMore = players.length === 50;
+      const rows = json.data || [];
+      allRows = [...allRows, ...rows];
+      hasMore = rows.length === 50;
       page++;
-      if (page > 20) break; // safety cap
+      if (page > 20) break;
     }
 
-    // Convert totals to per-game
-    const perGame = allPlayers.map(p => ({
-      id: p.playerId,
-      name: p.playerName,
-      team: p.team,
-      age: p.age,
-      gp: p.games,
-      pts: p.games > 0 ? Math.round(p.points / p.games * 10) / 10 : 0,
-      reb: p.games > 0 ? Math.round(p.totalRb / p.games * 10) / 10 : 0,
-      ast: p.games > 0 ? Math.round(p.assists / p.games * 10) / 10 : 0,
-      stl: p.games > 0 ? Math.round(p.steals / p.games * 10) / 10 : 0,
-      blk: p.games > 0 ? Math.round(p.blocks / p.games * 10) / 10 : 0,
-      to: p.games > 0 ? Math.round(p.turnovers / p.games * 10) / 10 : 0,
-      threesMade: p.games > 0 ? Math.round(p.threeFg / p.games * 10) / 10 : 0,
-    }));
+    // Group by playerId — handle traded players (multiple rows)
+    const grouped = {};
+    allRows.forEach(p => {
+      if (!grouped[p.playerId]) {
+        grouped[p.playerId] = [];
+      }
+      grouped[p.playerId].push(p);
+    });
+
+    // For each player, use the row with most games (their primary team)
+    // Skip "2TM" / "3TM" combined rows — use individual team rows instead
+    const perGame = Object.values(grouped).map(rows => {
+      // Filter out combined rows (2TM, 3TM)
+      const teamRows = rows.filter(r => r.team !== "2TM" && r.team !== "3TM");
+      // Pick the row with most games played
+      const primary = teamRows.length > 0
+        ? teamRows.sort((a, b) => b.games - a.games)[0]
+        : rows.sort((a, b) => b.games - a.games)[0];
+
+      const g = primary.games || 1;
+      return {
+        id: primary.playerId,
+        name: primary.playerName,
+        team: primary.team,
+        age: primary.age,
+        gp: primary.games,
+        pts: Math.round(primary.points / g * 10) / 10,
+        reb: Math.round(primary.totalRb / g * 10) / 10,
+        ast: Math.round(primary.assists / g * 10) / 10,
+        stl: Math.round(primary.steals / g * 10) / 10,
+        blk: Math.round(primary.blocks / g * 10) / 10,
+        to: Math.round(primary.turnovers / g * 10) / 10,
+        threesMade: Math.round(primary.threeFg / g * 10) / 10,
+      };
+    });
 
     setCache(perGame);
     return perGame;
@@ -65,15 +84,14 @@ export async function fetchPlayerSeasonStats() {
 export function findPlayer(players, name) {
   if (!players?.length || !name) return null;
   const lower = name.toLowerCase().trim();
-  // Exact match first
   let match = players.find(p => p.name?.toLowerCase() === lower);
   if (match) return match;
-  // Last name match
-  const lastName = lower.split(" ").slice(-1)[0];
-  const firstLetter = lower[0];
+  const parts = lower.split(" ");
+  const lastName = parts.slice(-1)[0];
+  const firstInitial = parts[0]?.[0];
   match = players.find(p => {
     const pLower = p.name?.toLowerCase() || "";
-    return pLower.includes(lastName) && pLower.startsWith(firstLetter);
+    return pLower.includes(lastName) && pLower.startsWith(firstInitial);
   });
   return match || null;
 }
