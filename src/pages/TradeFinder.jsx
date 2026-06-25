@@ -342,7 +342,7 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
     try {
       const clean = s => s?.replace(/\*\*/g, "").replace(/\*/g, "").trim();
       const extract = key => {
-        const m = text.match(new RegExp(`${key}:\\s*\\[?(\\d+)\\]?\\s*\\|?\\s*(.*)`, 'i'));
+        const m = text.match(new RegExp(`${key}[^\d]*(\d+)[^|\n]*\|?([^\n]*)`, "i"));
         return m ? { score: parseInt(m[1]), reasoning: clean(m[2]) } : { score: 50, reasoning: "" };
       };
       const verdictM = text.match(/VERDICT:\s*\[?(ACCEPT|DECLINE|COUNTER)\]?/i);
