@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { fetchStartupDraft } from "../utils/sleeperDraft";
 
 const LEAGUE_ID = "1371805753509158912";
 const SLEEPER_BASE = "https://api.sleeper.app/v1";
