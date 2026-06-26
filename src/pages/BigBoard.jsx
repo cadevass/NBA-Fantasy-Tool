@@ -125,14 +125,13 @@ Be direct. No fluff. Fantasy dynasty context only — not real NBA roster constr
     }
   }
 
-  function handleSaveWithoutAI() {
+  async function handleSaveWithoutAI() {
     const newProspect = {
       ...form,
       id: editingId || Date.now(),
       addedAt: new Date().toISOString(),
       aiAnalysis: "",
     if (editingId) { await updateProspect(editingId, newProspect); } else { await addProspect(newProspect); }
-    setShowModal(false); setEditingId(null); setForm({ ...EMPTY_PROSPECT });
     setShowModal(false); setEditingId(null); setForm({ ...EMPTY_PROSPECT });
   }
   function deleteProspect(id) { deleteProspectDb(id); }
