@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Plus, X, Zap, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useSupabaseArray } from "../hooks/useSupabaseStorage";
 import { callClaude } from "../utils/api";
 import { DYNASTY_CONTEXT } from "../utils/league";
 import { useSleeperContext } from "../context/SleeperContext";
 import { MY_PICKS, getPickValue, getAgeCurveMultiplier, getWindowAlignment } from "../utils/pickValues";
 import { getTeamContexts, setTeamContext, getTeamContext, TEAM_STATUSES } from "../utils/teamContext";
+import { dbSet, dbGet } from "../utils/supabase";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { buildDraftContext } from "../utils/sleeperDraft";
 
@@ -223,7 +225,7 @@ const VERDICT_STYLES = {
 
 export default function TradeFinder() {
   const { myTeam, teams, startupDraft } = useSleeperContext();
-  const [history, setHistory] = useLocalStorage("trade_history_v2", []);
+  const { value: history, addItem: addTradeHistory } = useSupabaseArray("trade_history");
   const [nbaPlayers, setNbaPlayers] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
   const [teamContexts, setTeamContextsState] = useState(getTeamContexts());
@@ -336,7 +338,7 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
         date: new Date().toISOString(),
       };
       setResult(tradeResult);
-      setHistory(prev => [tradeResult, ...prev.slice(0, 9)]);
+      await addTradeHistory(tradeResult);
     } catch (e) {
       setResult({ analysis: `Error: ${e.message}`, parsed: null });
     } finally {

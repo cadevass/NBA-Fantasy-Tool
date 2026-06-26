@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Plus, X, Newspaper, Zap, Edit2 } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useSupabaseArray } from "../hooks/useSupabaseStorage";
 import { callClaude } from "../utils/api";
 import { DYNASTY_CONTEXT, LOCK_IN_CONTEXT } from "../utils/league";
 import { useSleeperContext } from "../context/SleeperContext";
@@ -46,7 +47,7 @@ function CeilingDots({ value }) {
 
 export default function BigBoard() {
   const { myTeam } = useSleeperContext();
-  const [prospects, setProspects] = useLocalStorage("bb_prospects", []);
+  const { value: prospects, synced: prospectsSynced, addItem: addProspect, updateItem: updateProspect, deleteItem: deleteProspectDb, replaceAll: replaceProspects } = useSupabaseArray("prospects");
   const [news, setNews] = useLocalStorage("bb_news", []);
   const [showModal, setShowModal] = useState(false);
   const [showNews, setShowNews] = useState(false);
@@ -115,7 +116,7 @@ Be direct. No fluff. Fantasy dynasty context only — not real NBA roster constr
         addedAt: new Date().toISOString(),
         aiAnalysis: result,
       };
-      setProspects(prev => editingId ? prev.map(p => p.id === editingId ? newProspect : p) : [...prev, newProspect]);
+      if (editingId) { await updateProspect(editingId, newProspect); } else { await addProspect(newProspect); }
       setEditingId(null);
     } catch (e) {
       setAiResult(`Error: ${e.message}`);
@@ -130,12 +131,12 @@ Be direct. No fluff. Fantasy dynasty context only — not real NBA roster constr
       id: editingId || Date.now(),
       addedAt: new Date().toISOString(),
       aiAnalysis: "",
-    };
-    setProspects(prev => editingId ? prev.map(p => p.id === editingId ? newProspect : p) : [...prev, newProspect]);
+    if (editingId) { await updateProspect(editingId, newProspect); } else { await addProspect(newProspect); }
+    setShowModal(false); setEditingId(null); setForm({ ...EMPTY_PROSPECT });
     setShowModal(false); setEditingId(null); setForm({ ...EMPTY_PROSPECT });
   }
-
-  function openEdit(p) { setForm({ ...p }); setEditingId(p.id); setAiResult(p.aiAnalysis || ""); setShowModal(true); }
+  function deleteProspect(id) { deleteProspectDb(id); }
+  function overrideTier(id, tier) { const p = prospects.find(x => x.id === id); if (p) updateProspect(id, { ...p, manualTier: parseInt(tier) }); }
   function deleteProspect(id) { setProspects(prev => prev.filter(p => p.id !== id)); }
   function overrideTier(id, tier) { setProspects(prev => prev.map(p => p.id === id ? { ...p, manualTier: parseInt(tier) } : p)); }
 
