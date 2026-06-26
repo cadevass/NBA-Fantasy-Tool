@@ -47,7 +47,7 @@ function CeilingDots({ value }) {
 
 export default function BigBoard() {
   const { myTeam } = useSleeperContext();
-  const { value: prospects, synced: prospectsSynced, addItem: addProspect, updateItem: updateProspect, deleteItem: deleteProspectDb, replaceAll: replaceProspects } = useSupabaseArray("prospects");
+  const { value: prospects, synced: prospectsSynced, addItem: addProspect, updateItem: updateProspect, deleteItem: deleteProspectDb, replaceAll: replaceProspects } = useSupabaseArray("bb_prospects");
   const [news, setNews] = useLocalStorage("bb_news", []);
   const [showModal, setShowModal] = useState(false);
   const [showNews, setShowNews] = useState(false);

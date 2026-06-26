@@ -225,7 +225,7 @@ const VERDICT_STYLES = {
 
 export default function TradeFinder() {
   const { myTeam, teams, startupDraft } = useSleeperContext();
-  const { value: history, addItem: addTradeHistory } = useSupabaseArray("trade_history");
+  const { value: history, addItem: addTradeHistory } = useSupabaseArray("trade_history_v2");
   const [nbaPlayers, setNbaPlayers] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
   const [teamContexts, setTeamContextsState] = useState(getTeamContexts());
