@@ -131,6 +131,7 @@ Be direct. No fluff. Fantasy dynasty context only — not real NBA roster constr
       id: editingId || Date.now(),
       addedAt: new Date().toISOString(),
       aiAnalysis: "",
+    };
     if (editingId) { await updateProspect(editingId, newProspect); } else { await addProspect(newProspect); }
     setShowModal(false); setEditingId(null); setForm({ ...EMPTY_PROSPECT });
   }
