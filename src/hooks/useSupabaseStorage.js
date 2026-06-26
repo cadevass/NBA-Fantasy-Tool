@@ -14,15 +14,21 @@ export function useSupabaseStorage(table, key, initialValue) {
 
   // Load from Supabase on mount
   useEffect(() => {
+  useEffect(() => {
     async function load() {
-      const remote = await dbGet(table, key);
-      if (remote !== null) {
-        setValue(remote);
-        localStorage.setItem(`${table}_${key}`, JSON.stringify(remote));
+      try {
+        const remote = await dbGet(table, key);
+        if (remote !== null) {
+          setValue(remote);
+          localStorage.setItem(`${table}_${key}`, JSON.stringify(remote));
+        }
+      } catch (e) {
+        console.warn("Supabase unavailable, using localStorage:", e.message);
       }
       setSynced(true);
     }
     load();
+  }, [table, key]);
   }, [table, key]);
 
   // Save to both localStorage and Supabase (debounced)
@@ -45,33 +51,35 @@ export function useSupabaseStorage(table, key, initialValue) {
 export function useSupabaseArray(table, initialValue = []) {
   const [value, setValue] = useState(initialValue);
   const [synced, setSynced] = useState(false);
-
   useEffect(() => {
     async function load() {
-      const rows = await dbGetAll(table);
-      if (rows.length > 0) {
-        const items = rows.map(r => r.data);
-        setValue(items);
-        localStorage.setItem(table, JSON.stringify(items));
-      } else {
-        // Fall back to localStorage if Supabase is empty
-        try {
+      try {
+        const rows = await dbGetAll(table);
+        if (rows.length > 0) {
+          const items = rows.map(r => r.data);
+          setValue(items);
+          localStorage.setItem(table, JSON.stringify(items));
+        } else {
           const local = localStorage.getItem(table);
           if (local) {
             const items = JSON.parse(local);
             setValue(items);
-            // Push local data up to Supabase
             for (const item of items) {
               await dbSet(table, item.id?.toString() || Date.now().toString(), item);
             }
           }
+        }
+      } catch (e) {
+        console.warn("Supabase unavailable, falling back to localStorage:", e.message);
+        try {
+          const local = localStorage.getItem(table);
+          if (local) setValue(JSON.parse(local));
         } catch {}
       }
       setSynced(true);
     }
     load();
   }, [table]);
-
   const setValueAndSync = async (newValue) => {
     const items = newValue instanceof Function ? newValue(value) : newValue;
     setValue(items);
