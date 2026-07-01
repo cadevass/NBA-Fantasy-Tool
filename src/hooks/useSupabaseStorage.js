@@ -1,3 +1,4 @@
+import { getSupabaseTable } from "../utils/supabaseTableMap";
 import { useState, useEffect, useRef } from "react";
 import { dbSet, dbGet, dbGetAll, dbDelete } from "../utils/supabase";
 
@@ -14,7 +15,7 @@ export function useSupabaseStorage(table, key, initialValue) {
   useEffect(() => {
     async function load() {
       try {
-        const remote = await dbGet(table, key);
+        const remote = await dbGet(getSupabaseTable(table), key);
         if (remote !== null) {
           setValue(remote);
           localStorage.setItem(`${table}_${key}`, JSON.stringify(remote));
@@ -33,7 +34,7 @@ export function useSupabaseStorage(table, key, initialValue) {
     localStorage.setItem(`${table}_${key}`, JSON.stringify(valueToStore));
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      dbSet(table, key, valueToStore).catch(() => {});
+      dbSet(getSupabaseTable(table), key, valueToStore).catch(() => {});
     }, 1000);
   };
 
@@ -53,7 +54,7 @@ export function useSupabaseArray(table, initialValue = []) {
   useEffect(() => {
     async function load() {
       try {
-        const rows = await dbGetAll(table);
+        const rows = await dbGetAll(getSupabaseTable(table));
         if (rows.length > 0) {
           const first = rows[0].data;
           const items = Array.isArray(first) ? first : rows.map(r => r.data);
@@ -65,7 +66,7 @@ export function useSupabaseArray(table, initialValue = []) {
           if (local) {
             const items = JSON.parse(local);
             for (const item of items) {
-              await dbSet(table, item.id?.toString(), item).catch(() => {});
+              await dbSet(getSupabaseTable(table), item.id?.toString(), item).catch(() => {});
             }
           }
         }
@@ -87,28 +88,28 @@ export function useSupabaseArray(table, initialValue = []) {
     const newItems = [...value, item];
     setValue(newItems);
     localStorage.setItem(table, JSON.stringify(newItems));
-    dbSet(table, item.id?.toString(), item).catch(() => {});
+    dbSet(getSupabaseTable(table), item.id?.toString(), item).catch(() => {});
   };
 
   const updateItem = async (id, updatedItem) => {
     const newItems = value.map(i => i.id === id ? updatedItem : i);
     setValue(newItems);
     localStorage.setItem(table, JSON.stringify(newItems));
-    dbSet(table, id?.toString(), updatedItem).catch(() => {});
+    dbSet(getSupabaseTable(table), id?.toString(), updatedItem).catch(() => {});
   };
 
   const deleteItem = async (id) => {
     const newItems = value.filter(i => i.id !== id);
     setValue(newItems);
     localStorage.setItem(table, JSON.stringify(newItems));
-    dbDelete(table, id?.toString()).catch(() => {});
+    dbDelete(getSupabaseTable(table), id?.toString()).catch(() => {});
   };
 
   const replaceAll = async (items) => {
     setValue(items);
     localStorage.setItem(table, JSON.stringify(items));
     for (const item of items) {
-      dbSet(table, item.id?.toString(), item).catch(() => {});
+      dbSet(getSupabaseTable(table), item.id?.toString(), item).catch(() => {});
     }
   };
 
