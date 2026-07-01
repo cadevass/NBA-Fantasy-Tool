@@ -55,7 +55,8 @@ export function useSupabaseArray(table, initialValue = []) {
       try {
         const rows = await dbGetAll(table);
         if (rows.length > 0) {
-          const items = rows.map(r => r.data);
+          const first = rows[0].data;
+          const items = Array.isArray(first) ? first : rows.map(r => r.data);
           setValue(items);
           localStorage.setItem(table, JSON.stringify(items));
         } else {
