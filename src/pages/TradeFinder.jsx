@@ -383,57 +383,81 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
     setSuggestLoading(true); setSuggestions(null);
     try {
       const targetTeam = suggestTeamId === -1 ? null : otherTeams.find(t => t.rosterId === suggestTeamId);
-      const myRoster = myRosterPlayers.map(p => {
-        const s = getStats(p.name);
-        return s ? `${p.name} (Age ${s.age}, ${s.pts}pts/${s.reb}reb/${s.ast}ast)` : p.name;
-      }).join(", ");
-
-      const theirRoster = targetTeam
-        ? [...targetTeam.starters, ...targetTeam.bench, ...(targetTeam.taxi || [])].map(p => {
-            const s = getStats(p.name);
-            return s ? `${p.name} (Age ${s.age}, ${s.pts}pts/${s.reb}reb/${s.ast}ast)` : p.name;
-          }).join(", ")
-        : "All league teams";
-
-      const myPicks = Object.values(MY_PICKS).map(p => `${p.label} (value: ${p.givingValue})`).join(", ");
-      const teamStatus = targetTeam ? getTeamContext(targetTeam.rosterId).status : "various";
       const draftCtx = buildDraftContext(startupDraft, teams || []);
-      const prompt = `You are a dynasty fantasy basketball trade analyst. Search the web for current player values and news, then suggest 3 realistic trade proposals.
-MY ROSTER: ${myRoster}
-MY DRAFT CAPITAL: ${myPicks}
-STARTUP DRAFT CONTEXT:
-${draftCtx}
 
-${targetTeam
-  ? `TARGET TEAM: ${targetTeam.teamName || targetTeam.username} (Status: ${teamStatus})\nTHEIR ROSTER: ${theirRoster}`
-  : `FIND BEST TRADES ACROSS ALL TEAMS:
-${otherTeams.map(t => {
-            const roster = [...t.starters, ...t.bench, ...(t.taxi||[])].map(p => p.name).join(", ");
-            return `${t.teamName||t.username} (${getTeamContext(t.rosterId).status||"unknown"}): ${roster}`;
-          }).join("\n")}`
-}
+      // Build my roster with stats
+      const myRosterStr = myRosterPlayers.map(p => {
+        const s = getStats(p.name);
+        return s ? `${p.name} (${p.pos?.join("/")}, Age ${s.age}, ${s.pts}pts/${s.reb}reb/${s.ast}ast/${s.stl}stl/${s.blk}blk)` : p.name;
+      }).join("\n");
+
+      const myPicks = Object.values(MY_PICKS).map(p => `${p.label} (dynasty value: ${p.givingValue})`).join(", ");
+
+      // Build all team rosters with stats
+      const allTeamRosters = (targetTeam ? [targetTeam] : otherTeams).map(t => {
+        const ctx = getTeamContext(t.rosterId);
+        const roster = [...t.starters, ...t.bench, ...(t.taxi||[])].map(p => {
+          const s = getStats(p.name);
+          return s ? `${p.name} (Age ${s.age}, ${s.pts}pts/${s.reb}reb/${s.ast}ast)` : p.name;
+        }).join(", ");
+        return `${t.teamName||t.username} | Status: ${ctx.status||"unknown"} | Notes: ${ctx.notes||"none"} | Roster: ${roster}`;
+      }).join("\n\n");
+
+      const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
+
+Search the web for current NBA news, injuries, and player situations before responding.
+
+MY TEAM — THE BACKSHOT DYNASTY:
+${myRosterStr}
+
+MY DRAFT CAPITAL: ${myPicks}
+
+MY SELL CANDIDATES (players I am open to trading):
+- De'Aaron Fox (PG, SAS) — Dylan Harper is emerging as the Spurs starter, Fox's role and usage declining at age 28
+- Peyton Watson (SF/PF, DEN) — solid but redundant given my SF/PF depth
+- Franz Wagner (SF/PF, ORL) — injury history makes him moveable for the right return
+- Dejounte Murray (SG/PG, NOP) — came back from Achilles averaging ~21 fantasy pts in 14 games, only move for genuine value
+
+MY UNTOUCHABLES (do NOT suggest trading these):
+Cade Cunningham, Jalen Johnson, Kel'el Ware, Alex Sarr, Donovan Clingan, Scoot Henderson, Payton Pritchard (value just spiked — Jaylen Brown traded away from Boston, Pritchard now featured prominently in Celtics offense)
+
+MY PRIORITY NEEDS:
+1. Elite SG with star upside (biggest need)
+2. High-ceiling durable SF
+
+STARTUP DRAFT CONTEXT — use this to determine untouchable players on other teams:
+${draftCtx}
 
 ${DYNASTY_CONTEXT}
 
-CRITICAL RULES:
-1. You may ONLY suggest players that appear in MY ROSTER or THEIR ROSTER lists above. Never invent or suggest players not listed.
-2. This is FANTASY basketball only — player value = fantasy scoring output and dynasty window. Never mention real basketball fit, team chemistry, or on-court roles.
-3. Only suggest trades the other team would realistically accept based on their status and needs.
+OTHER TEAM(S):
+${allTeamRosters}
 
-Generate 3 realistic trade proposals using ONLY the players listed above. Format each as:
+INSTRUCTIONS:
+Step 1 — For each other team, identify what they have surplus of and what they need
+Step 2 — Match my sell candidates to their needs
+Step 3 — Identify players on their roster that fill MY needs (SG/SF with star upside)
+Step 4 — Only propose a trade if: (a) they would realistically accept it, (b) it fills my SG or SF need, (c) it gives them something they actually need
+Step 5 — Cross check startup draft context — do NOT suggest anyone drafted in rounds 1-2 who is currently performing well (15+ pts/game)
+
+ONLY suggest players that appear in the rosters listed above. Never invent players.
+This is FANTASY only — value = fantasy scoring output. Not real basketball.
+
+Give me exactly 3 trade proposals, ranked by confidence (most realistic first):
 
 TRADE_1:
-I_GIVE: [assets]
-I_RECEIVE: [assets]
+I_GIVE: [my players/picks]
+I_RECEIVE: [their players]
 FROM_TEAM: [team name]
-RATIONALE: [2-3 sentences why both sides benefit]
-FAIRNESS: [Favors me / Fair / Favors them]
+WHY_THEY_ACCEPT: [1-2 sentences — what do they get that they need]
+WHY_I_WIN: [1-2 sentences — how does this improve my roster]
+CONFIDENCE: [High/Medium/Low]
 
 TRADE_2:
-[same]
+[same format]
 
 TRADE_3:
-[same]`;
+[same format]`;
 
       const text = await callClaude([{ role: "user", content: prompt }]);
       setSuggestions(text);
