@@ -462,6 +462,8 @@ CRITICAL RULES:
 5. 2026-27 OUTLOOK MATTERS — if ${targetPlayer.name}'s role is expanding next season, they'll want more. If contracting, they may be more willing to deal.
 6. Build 3 packages ranging from MINIMUM offer to AGGRESSIVE offer — show me the range of what it might cost.
 
+IMPORTANT: Output the 3 trade packages FIRST before any analysis. Start your response immediately with TRADE_1: on the first line. You may add analysis after TRADE_3.
+
 Give me exactly 3 offer packages, from cheapest to most aggressive:
 
 TRADE_1:
@@ -490,7 +492,6 @@ TRADE_3:
   function parseSuggestions(text) {
     if (!text) return [];
     const trades = [];
-    console.log('RAW SUGGESTIONS:', text);
     const blocks = text.split(/TRADE_\d+:/i).filter(b => b.trim() && /I_GIVE:/i.test(b));
     blocks.forEach((block, i) => {
       const clean = s => s?.replace(/\*\*/g, '').replace(/\*/g, '').trim();
