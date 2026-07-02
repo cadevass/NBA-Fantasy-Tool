@@ -404,28 +404,41 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
       }).join("\n\n");
 
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
-
-Search the web for current NBA news, injuries, and player situations before responding.
+Search the web for current NBA news and player situations before responding.
 
 MY TEAM — THE BACKSHOT DYNASTY:
 ${myRosterStr}
 
 MY DRAFT CAPITAL: ${myPicks}
 
-MY SELL CANDIDATES (players I am open to trading):
-- De'Aaron Fox (PG, SAS) — Dylan Harper is emerging as the Spurs starter, Fox's role and usage declining at age 28
-- Peyton Watson (SF/PF, DEN) — solid but redundant given my SF/PF depth
-- Franz Wagner (SF/PF, ORL) — injury history makes him moveable for the right return
-- Dejounte Murray (SG/PG, NOP) — came back from Achilles averaging ~21 fantasy pts in 14 games, only move for genuine value
+PLAYER MARKET VALUATIONS — use these exactly, do not override with your own assumptions:
 
-MY UNTOUCHABLES (do NOT suggest trading these):
-Cade Cunningham, Jalen Johnson
+UNTOUCHABLES — never suggest trading these:
+- Cade Cunningham: ELITE. 23.9pts/9.9ast, 5th among PGs. Franchise cornerstone at 24.
+- Jalen Johnson: ELITE. 22.5pts/10.3reb/7.9ast, 3rd among PFs. Triple-double machine. Never trade.
+- Kel'el Ware: UNTOUCHABLE. Traded to Milwaukee in Giannis deal, now likely starting C. 22yo, value about to explode.
+- Alex Sarr: UNTOUCHABLE. 16.3pts/7.4reb/2.0blk, elite shot-blocker at 21. Never trade.
+- Donovan Clingan: HIGH VALUE. Only move for a top-3 startup pick equivalent — nothing less.
+
+SELL CANDIDATES — open to trading at right price:
+- Michael Porter Jr.: SELL HIGH NOW. Career highs 24.2pts/7.1reb/3.4 3PM in 52 games, hamstring ended season March 10. Peak value window. Realistic return: young ascending player (22-25) or young player + first.
+- De'Aaron Fox: LOW market value. Fox ankle injury in Wolves playoffs never healed, Harper outplayed him every big game, Finals collapse public. Market ranks him 11th among PGs. Realistic return: single mid-tier asset or late first only. Do NOT expect a star back.
+- Dejounte Murray: MODERATE value. Post-Achilles ~21 fantasy pts in 14 games. Age 29. Realistic return: mid-tier young asset or pick. Do not fire sale.
+- Scoot Henderson: SELL NOW. Portland traded for Ja Morant — starting backcourt is Morant/Lillard/Holiday. Henderson role is dead. His age (22) still attracts buyers. Sell before value evaporates.
+- Franz Wagner: MODERATE-HIGH value. 20.6pts/5.2reb when healthy but only 34 games (ankle/calf). Secure Orlando role. Only move if massively overpaid.
+
+HOLD — do not suggest trading these:
+- Payton Pritchard: Value spiked with Jaylen Brown gone from Boston. Do NOT sell cheap.
+- Peyton Watson: Breakout season, 2.1 stocks/game at 2x scoring. Hold unless massive overpay.
+- Bennedict Mathurin: Kawhi gone from Clippers, role ascending alongside Garland. Hold.
+- Collin Murray-Boyles: 21yo dynasty project, Toronto long-term core. Hold.
+- Kasparas Jakucionis: Long-term stash on rebuilding Bucks. Hold.
 
 MY PRIORITY NEEDS:
-1. Elite SG with star upside (biggest need)
+1. Elite SG with star upside (biggest need — I am PG-heavy)
 2. High-ceiling durable SF
 
-STARTUP DRAFT CONTEXT — use this to determine untouchable players on other teams:
+STARTUP DRAFT CONTEXT — use to identify what other managers value and won't trade:
 ${draftCtx}
 
 ${DYNASTY_CONTEXT}
@@ -433,25 +446,21 @@ ${DYNASTY_CONTEXT}
 OTHER TEAM(S):
 ${allTeamRosters}
 
-INSTRUCTIONS:
-Step 1 — For each other team, identify what they have surplus of and what they need
-Step 2 — Match my sell candidates to their needs
-Step 3 — Identify players on their roster that fill MY needs (SG/SF with star upside)
-Step 4 — Only propose a trade if: (a) they would realistically accept it, (b) it fills my SG or SF need, (c) it gives them something they actually need
-Step 5 — Cross check startup draft context — do NOT suggest anyone drafted in rounds 1-2 who is currently performing well (15+ pts/game)
+CRITICAL RULES:
+1. ONLY suggest players from the rosters listed above. Never invent players.
+2. FANTASY ONLY — value = fantasy scoring output. Never mention real basketball fit.
+3. MARKET VALUE IS SHARED — Fox decline, Harper emergence, MPJ injury — all managers know this. Suggest trades where BOTH sides have genuine motivation.
+4. REALISTIC ACCEPTANCE — would a real dynasty manager actually accept this? If no, do not suggest it.
+5. STARTUP UNTOUCHABLES — round 1-2 startup picks performing 15+ pts/game are almost certainly untouchable.
 
-ONLY suggest players that appear in the rosters listed above. Never invent players.
-This is FANTASY only — value = fantasy scoring output. Not real basketball.
-
-Give me exactly 3 trade proposals, ranked by confidence (most realistic first).
-You MUST start each trade with exactly this format on its own line: TRADE_1: then TRADE_2: then TRADE_3:
+Give me exactly 3 trade proposals, ranked by confidence. Each MUST start with TRADE_1:, TRADE_2:, TRADE_3: on its own line:
 
 TRADE_1:
 I_GIVE: [my players/picks]
 I_RECEIVE: [their players]
 FROM_TEAM: [team name]
-WHY_THEY_ACCEPT: [1-2 sentences — what do they get that they need]
-WHY_I_WIN: [1-2 sentences — how does this improve my roster]
+WHY_THEY_ACCEPT: [1-2 sentences]
+WHY_I_WIN: [1-2 sentences]
 CONFIDENCE: [High/Medium/Low]
 
 TRADE_2:
