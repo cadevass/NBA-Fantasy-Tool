@@ -419,7 +419,7 @@ MY SELL CANDIDATES (players I am open to trading):
 - Dejounte Murray (SG/PG, NOP) — came back from Achilles averaging ~21 fantasy pts in 14 games, only move for genuine value
 
 MY UNTOUCHABLES (do NOT suggest trading these):
-Cade Cunningham, Jalen Johnson, Kel'el Ware, Alex Sarr, Donovan Clingan, Scoot Henderson, Payton Pritchard (value just spiked — Jaylen Brown traded away from Boston, Pritchard now featured prominently in Celtics offense)
+Cade Cunningham, Jalen Johnson
 
 MY PRIORITY NEEDS:
 1. Elite SG with star upside (biggest need)
