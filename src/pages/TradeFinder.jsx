@@ -443,7 +443,8 @@ Step 5 — Cross check startup draft context — do NOT suggest anyone drafted i
 ONLY suggest players that appear in the rosters listed above. Never invent players.
 This is FANTASY only — value = fantasy scoring output. Not real basketball.
 
-Give me exactly 3 trade proposals, ranked by confidence (most realistic first):
+Give me exactly 3 trade proposals, ranked by confidence (most realistic first).
+You MUST start each trade with exactly this format on its own line: TRADE_1: then TRADE_2: then TRADE_3:
 
 TRADE_1:
 I_GIVE: [my players/picks]
@@ -473,11 +474,12 @@ TRADE_3:
     const trades = [];
     const blocks = text.split(/TRADE_\d+:/i).filter(b => b.trim());
     blocks.forEach((block, i) => {
-      const give = block.match(/I_GIVE:\s*([^\n]+)/i)?.[1]?.trim() || "";
-      const receive = block.match(/I_RECEIVE:\s*([^\n]+)/i)?.[1]?.trim() || "";
-      const fromTeam = block.match(/FROM_TEAM:\s*([^\n]+)/i)?.[1]?.trim() || "";
-      const whyAccept = block.match(/WHY_THEY_ACCEPT:\s*([\s\S]+?)(?=WHY_I_WIN:|CONFIDENCE:|TRADE_\d+:|$)/i)?.[1]?.trim() || "";
-      const whyWin = block.match(/WHY_I_WIN:\s*([\s\S]+?)(?=CONFIDENCE:|TRADE_\d+:|$)/i)?.[1]?.trim() || "";
+      const clean = s => s?.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+      const give = clean(block.match(/I_GIVE:\s*([^\n]+)/i)?.[1]) || "";
+      const receive = clean(block.match(/I_RECEIVE:\s*([^\n]+)/i)?.[1]) || "";
+      const fromTeam = clean(block.match(/FROM_TEAM:\s*([^\n]+)/i)?.[1]) || "";
+      const whyAccept = clean(block.match(/WHY_THEY_ACCEPT:\s*([\s\S]+?)(?=WHY_I_WIN:|CONFIDENCE:|TRADE_\d+:|$)/i)?.[1]) || "";
+      const whyWin = clean(block.match(/WHY_I_WIN:\s*([\s\S]+?)(?=CONFIDENCE:|TRADE_\d+:|$)/i)?.[1]) || "";
       const confidence = block.match(/CONFIDENCE:\s*(High|Medium|Low)/i)?.[1] || "Medium";
       if (give || receive) trades.push({ id: i+1, give, receive, fromTeam, whyAccept, whyWin, confidence });
     });
