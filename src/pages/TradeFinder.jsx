@@ -468,6 +468,22 @@ TRADE_3:
     }
   }
 
+  function parseSuggestions(text) {
+    if (!text) return [];
+    const trades = [];
+    const blocks = text.split(/TRADE_\d+:/i).filter(b => b.trim());
+    blocks.forEach((block, i) => {
+      const give = block.match(/I_GIVE:\s*([^\n]+)/i)?.[1]?.trim() || "";
+      const receive = block.match(/I_RECEIVE:\s*([^\n]+)/i)?.[1]?.trim() || "";
+      const fromTeam = block.match(/FROM_TEAM:\s*([^\n]+)/i)?.[1]?.trim() || "";
+      const whyAccept = block.match(/WHY_THEY_ACCEPT:\s*([\s\S]+?)(?=WHY_I_WIN:|CONFIDENCE:|TRADE_\d+:|$)/i)?.[1]?.trim() || "";
+      const whyWin = block.match(/WHY_I_WIN:\s*([\s\S]+?)(?=CONFIDENCE:|TRADE_\d+:|$)/i)?.[1]?.trim() || "";
+      const confidence = block.match(/CONFIDENCE:\s*(High|Medium|Low)/i)?.[1] || "Medium";
+      if (give || receive) trades.push({ id: i+1, give, receive, fromTeam, whyAccept, whyWin, confidence });
+    });
+    return trades;
+  }
+
   function reset() {
     setGiving([]); setReceiving([]); setOtherContext("");
     setResult(null); setSelectedTeamId(null);
@@ -703,9 +719,50 @@ TRADE_3:
           </div>
           <div>
             {suggestions ? (
-              <div className="card">
-                <div className="card-header"><span className="card-title">Suggested Trades</span></div>
-                <div className="card-body"><div className="ai-box">{suggestions}</div></div>
+              <div className="flex-col gap-3">
+                {parseSuggestions(suggestions).length > 0 ? parseSuggestions(suggestions).map(trade => (
+                  <div key={trade.id} className="card">
+                    <div className="card-header">
+                      <span className="card-title">Trade {trade.id}</span>
+                      <span style={{
+                        marginLeft: "auto", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+                        background: trade.confidence === "High" ? "var(--green-bg)" : trade.confidence === "Low" ? "var(--red-bg)" : "var(--accent-light)",
+                        color: trade.confidence === "High" ? "var(--green)" : trade.confidence === "Low" ? "var(--red)" : "var(--accent-dim)",
+                      }}>{trade.confidence} Confidence</span>
+                    </div>
+                    <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, borderBottom: "1px solid var(--border)" }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>I Give</div>
+                        <div style={{ fontSize: 13 }}>{trade.give}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>I Receive</div>
+                        <div style={{ fontSize: 13 }}>{trade.receive}</div>
+                      </div>
+                    </div>
+                    {trade.fromTeam && (
+                      <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--border)", fontSize: 12, color: "var(--text-muted)" }}>
+                        Trading with: <strong style={{ color: "var(--text-primary)" }}>{trade.fromTeam}</strong>
+                      </div>
+                    )}
+                    <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+                      {trade.whyAccept && (
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Why They Accept</div>
+                          <div style={{ fontSize: 13, lineHeight: 1.6 }}>{trade.whyAccept}</div>
+                        </div>
+                      )}
+                      {trade.whyWin && (
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Why I Win</div>
+                          <div style={{ fontSize: 13, lineHeight: 1.6 }}>{trade.whyWin}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )) : (
+                  <div className="card"><div className="card-body"><div className="ai-box">{suggestions}</div></div></div>
+                )}
               </div>
             ) : (
               <div className="card">
