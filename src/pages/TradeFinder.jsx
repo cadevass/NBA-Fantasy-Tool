@@ -239,6 +239,7 @@ export default function TradeFinder() {
   const [activeTab, setActiveTab] = useState("evaluate");
 
   const [suggestTeamId, setSuggestTeamId] = useState(null);
+  const [targetPlayer, setTargetPlayer] = useState(null);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
 
@@ -379,7 +380,7 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
     } catch { return null; }
   }
   async function getSuggestions() {
-    if (suggestTeamId === null) return;
+    if (suggestTeamId === null || !targetPlayer) return;
     setSuggestLoading(true); setSuggestions(null);
     try {
       const targetTeam = suggestTeamId === -1 ? null : otherTeams.find(t => t.rosterId === suggestTeamId);
@@ -402,72 +403,80 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
         }).join(", ");
         return `${t.teamName||t.username} | Status: ${ctx.status||"unknown"} | Notes: ${ctx.notes||"none"} | Roster: ${roster}`;
       }).join("\n\n");
+      const targetTeamCtx = getTeamContext(targetTeam?.rosterId);
+      const targetStats = getStats(targetPlayer.name);
+      const targetPlayerStr = targetStats
+        ? `${targetPlayer.name} (Age ${targetStats.age}, ${targetStats.pts}pts/${targetStats.reb}reb/${targetStats.ast}ast/${targetStats.stl}stl/${targetStats.blk}blk)`
+        : targetPlayer.name;
+
+      // Find target player's startup pick
+      const targetStartupPick = startupDraft?.find(p => p.playerName === targetPlayer.name);
+      const startupPickStr = targetStartupPick
+        ? `Drafted at Pick ${targetStartupPick.pickNo} (Round ${targetStartupPick.round}) in the startup — this indicates their attachment level`
+        : "Startup pick position unknown";
 
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
-Search the web for current NBA news and player situations before responding.
+Search the web specifically for: (1) ${targetPlayer.name}'s 2026-27 season outlook and role, (2) ${targetTeam?.teamName || targetTeam?.username}'s roster needs heading into 2026-27.
+
+I WANT TO ACQUIRE: ${targetPlayerStr}
+FROM: ${targetTeam?.teamName || targetTeam?.username} (Status: ${targetTeamCtx?.status || "unknown"})
+THEIR NOTES: ${targetTeamCtx?.notes || "none"}
+STARTUP DRAFT INFO: ${startupPickStr}
 
 MY TEAM — THE BACKSHOT DYNASTY:
 ${myRosterStr}
 
 MY DRAFT CAPITAL: ${myPicks}
 
-PLAYER MARKET VALUATIONS — use these exactly, do not override with your own assumptions:
+PLAYER MARKET VALUATIONS — use these exactly:
 
-UNTOUCHABLES — never suggest trading these:
-- Cade Cunningham: ELITE. 23.9pts/9.9ast, 5th among PGs. Franchise cornerstone at 24.
-- Jalen Johnson: ELITE. 22.5pts/10.3reb/7.9ast, 3rd among PFs. Triple-double machine. Never trade.
-- Kel'el Ware: UNTOUCHABLE. Traded to Milwaukee in Giannis deal, now likely starting C. 22yo, value about to explode.
-- Alex Sarr: UNTOUCHABLE. 16.3pts/7.4reb/2.0blk, elite shot-blocker at 21. Never trade.
-- Donovan Clingan: HIGH VALUE. Only move for a top-3 startup pick equivalent — nothing less.
+UNTOUCHABLES — I will NOT include these in any offer:
+- Cade Cunningham, Jalen Johnson, Kel'el Ware, Alex Sarr
 
-SELL CANDIDATES — open to trading at right price:
-- Michael Porter Jr.: SELL HIGH NOW. Career highs 24.2pts/7.1reb/3.4 3PM in 52 games, hamstring ended season March 10. Peak value window. Realistic return: young ascending player (22-25) or young player + first.
-- De'Aaron Fox: LOW market value. Fox ankle injury in Wolves playoffs never healed, Harper outplayed him every big game, Finals collapse public. Market ranks him 11th among PGs. Realistic return: single mid-tier asset or late first only. Do NOT expect a star back.
-- Dejounte Murray: MODERATE value. Post-Achilles ~21 fantasy pts in 14 games. Age 29. Realistic return: mid-tier young asset or pick. Do not fire sale.
-- Scoot Henderson: SELL NOW. Portland traded for Ja Morant — starting backcourt is Morant/Lillard/Holiday. Henderson role is dead. His age (22) still attracts buyers. Sell before value evaporates.
-- Franz Wagner: MODERATE-HIGH value. 20.6pts/5.2reb when healthy but only 34 games (ankle/calf). Secure Orlando role. Only move if massively overpaid.
+SELL CANDIDATES — assets I can offer:
+- Michael Porter Jr.: SELL HIGH. 24.2pts/7.1reb/3.4 3PM career highs, hamstring ended season. Peak value. Return value = young ascending player (22-25) or player + first.
+- De'Aaron Fox: LOW value. Harper situation public, Finals collapse public. Return value = mid-tier asset or late first only.
+- Dejounte Murray: MODERATE value. Post-Achilles, age 29. Return value = mid-tier young asset or pick.
+- Scoot Henderson: SELL NOW. Portland backcourt is Morant/Lillard/Holiday — his role is dead. Age 22 still attracts buyers.
+- Franz Wagner: MODERATE-HIGH. 20.6pts when healthy but injury prone. Only move for significant overpay.
+- Donovan Clingan: HIGH VALUE. Only include if getting top-3 startup pick equivalent back.
 
-HOLD — do not suggest trading these:
-- Payton Pritchard: Value spiked with Jaylen Brown gone from Boston. Do NOT sell cheap.
-- Peyton Watson: Breakout season, 2.1 stocks/game at 2x scoring. Hold unless massive overpay.
-- Bennedict Mathurin: Kawhi gone from Clippers, role ascending alongside Garland. Hold.
-- Collin Murray-Boyles: 21yo dynasty project, Toronto long-term core. Hold.
-- Kasparas Jakucionis: Long-term stash on rebuilding Bucks. Hold.
+HOLD — do NOT include these in any offer:
+Payton Pritchard, Peyton Watson, Bennedict Mathurin, Collin Murray-Boyles, Kasparas Jakucionis
 
-MY PRIORITY NEEDS:
-1. Elite SG with star upside (biggest need — I am PG-heavy)
-2. High-ceiling durable SF
+MY PRIORITY NEED: Elite SG with star upside. ${targetPlayer.name} fills this need because [you determine why].
 
-STARTUP DRAFT CONTEXT — use to identify what other managers value and won't trade:
+THEIR FULL ROSTER:
+${allTeamRosters}
+
+STARTUP DRAFT CONTEXT (attachment levels):
 ${draftCtx}
 
 ${DYNASTY_CONTEXT}
 
-OTHER TEAM(S):
-${allTeamRosters}
-
 CRITICAL RULES:
-1. ONLY suggest players from the rosters listed above. Never invent players.
-2. FANTASY ONLY — value = fantasy scoring output. Never mention real basketball fit.
-3. MARKET VALUE IS SHARED — Fox decline, Harper emergence, MPJ injury — all managers know this. Suggest trades where BOTH sides have genuine motivation.
-4. REALISTIC ACCEPTANCE — would a real dynasty manager actually accept this? If no, do not suggest it.
-5. STARTUP UNTOUCHABLES — round 1-2 startup picks performing 15+ pts/game are almost certainly untouchable.
+1. ONLY suggest players from MY ROSTER or THEIR ROSTER. Never invent players.
+2. FANTASY ONLY — value = fantasy scoring output. Never mention real NBA fit.
+3. Think from THEIR perspective first — what do they actually need that I can offer? What would make them move ${targetPlayer.name}?
+4. The ${startupPickStr} — higher startup pick = more attachment = harder to pry loose = I need to offer more.
+5. 2026-27 OUTLOOK MATTERS — if ${targetPlayer.name}'s role is expanding next season, they'll want more. If contracting, they may be more willing to deal.
+6. Build 3 packages ranging from MINIMUM offer to AGGRESSIVE offer — show me the range of what it might cost.
 
-Give me exactly 3 trade proposals, ranked by confidence. Each MUST start with TRADE_1:, TRADE_2:, TRADE_3: on its own line:
+Give me exactly 3 offer packages, from cheapest to most aggressive:
 
 TRADE_1:
-I_GIVE: [my players/picks]
-I_RECEIVE: [their players]
-FROM_TEAM: [team name]
-WHY_THEY_ACCEPT: [1-2 sentences]
-WHY_I_WIN: [1-2 sentences]
+I_GIVE: [minimum realistic offer to start negotiations]
+I_RECEIVE: ${targetPlayer.name} (+ anything else realistic)
+FROM_TEAM: ${targetTeam?.teamName || targetTeam?.username}
+WHY_THEY_ACCEPT: [what need does this fill for them]
+WHY_I_WIN: [how does this improve my roster]
 CONFIDENCE: [High/Medium/Low]
 
 TRADE_2:
-[same format]
+[fair value offer]
 
 TRADE_3:
-[same format]`;
+[aggressive offer if they're being stubborn]`;
 
       const text = await callClaude([{ role: "user", content: prompt }]);
       setSuggestions(text);
@@ -705,36 +714,100 @@ TRADE_3:
 
       {/* SUGGEST */}
       {activeTab === "suggest" && (
-        <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, alignItems: "start" }}>
-          <div className="card">
-            <div className="card-header"><span className="card-title">Suggestion Engine</span></div>
-            <div className="card-body flex-col gap-3">
-              <div className="input-group">
-                <label className="label">Target</label>
+        <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 20, alignItems: "start" }}>
+          {/* LEFT PANEL */}
+          <div className="flex-col gap-4">
+            {/* Step 1: Pick team */}
+            <div className="card">
+              <div className="card-header"><span className="card-title">1. Pick a Team</span></div>
+              <div className="card-body">
                 <select className="select" value={suggestTeamId ?? ""}
-                  onChange={e => setSuggestTeamId(e.target.value === "" ? null : parseInt(e.target.value))}>
-                  <option value="">Select...</option>
-                  <option value={-1}>🌐 Best trade across all teams</option>
+                  onChange={e => { setSuggestTeamId(e.target.value === "" ? null : parseInt(e.target.value)); setTargetPlayer(null); setSuggestions(null); }}
+                  style={{ fontSize: 14, height: 44 }}>
+                  <option value="">Select a team...</option>
                   {otherTeams.map(t => (
                     <option key={t.rosterId} value={t.rosterId}>
-                      {t.teamName || t.username}
+                      {t.teamName || t.username} — {getTeamContext(t.rosterId).status || "unclassified"}
                     </option>
                   ))}
                 </select>
+                {suggestTeamId && getTeamContext(otherTeams.find(t => t.rosterId === suggestTeamId)?.rosterId)?.notes && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+                    {getTeamContext(otherTeams.find(t => t.rosterId === suggestTeamId)?.rosterId)?.notes}
+                  </div>
+                )}
               </div>
-              <button className="btn btn-accent w-full" onClick={getSuggestions}
-                disabled={suggestLoading || suggestTeamId === null}>
-                {suggestLoading ? <><span className="spinner" /> Finding trades...</> : <><Zap size={14} /> Suggest Trades</>}
-              </button>
             </div>
+
+            {/* Step 2: Pick target player */}
+            {suggestTeamId && (() => {
+              const team = otherTeams.find(t => t.rosterId === suggestTeamId);
+              const roster = team ? [...team.starters, ...team.bench, ...(team.taxi||[])] : [];
+              return (
+                <div className="card">
+                  <div className="card-header"><span className="card-title">2. Who Do You Want?</span></div>
+                  <div className="card-body flex-col gap-2">
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Click a player to target them</div>
+                    {roster.map(p => {
+                      const s = getStats(p.name);
+                      const isSelected = targetPlayer?.name === p.name;
+                      return (
+                        <div key={p.name}
+                          onClick={() => { setTargetPlayer(p); setSuggestions(null); }}
+                          style={{
+                            padding: "10px 12px", borderRadius: "var(--radius)",
+                            border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                            background: isSelected ? "var(--accent-light)" : "var(--surface)",
+                            cursor: "pointer", transition: "all 0.15s",
+                          }}>
+                          <div style={{ fontWeight: isSelected ? 700 : 500, fontSize: 13 }}>{p.name}</div>
+                          {s && (
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                              {s.pts}pts · {s.reb}reb · {s.ast}ast · {s.stl}stl · {s.blk}blk · Age {s.age}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Step 3: Get offer packages */}
+            {targetPlayer && (
+              <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
+                onClick={getSuggestions} disabled={suggestLoading}>
+                {suggestLoading
+                  ? <><span className="spinner" /> Researching trade packages...</>
+                  : <><Zap size={15} /> Build Offer Packages</>
+                }
+              </button>
+            )}
           </div>
+
+          {/* RIGHT PANEL */}
           <div>
-            {suggestions ? (
+            {suggestLoading && (
+              <div className="card">
+                <div className="card-body" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
+                  <div className="spinner" style={{ margin: "0 auto 16px", width: 32, height: 32 }} />
+                  <div className="font-semibold" style={{ fontSize: 14 }}>Researching {targetPlayer?.name}...</div>
+                  <div className="text-sm mt-2">Checking startup pick, 2026-27 outlook, team needs</div>
+                </div>
+              </div>
+            )}
+            {!suggestLoading && suggestions ? (
               <div className="flex-col gap-3">
                 {parseSuggestions(suggestions).length > 0 ? parseSuggestions(suggestions).map(trade => (
                   <div key={trade.id} className="card">
                     <div className="card-header">
-                      <span className="card-title">Trade {trade.id}</span>
+                      <div>
+                        <span className="card-title">Package {trade.id}</span>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                          Targeting {targetPlayer?.name}
+                        </div>
+                      </div>
                       <span style={{
                         marginLeft: "auto", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700,
                         background: trade.confidence === "High" ? "var(--green-bg)" : trade.confidence === "Low" ? "var(--red-bg)" : "var(--accent-light)",
@@ -751,11 +824,6 @@ TRADE_3:
                         <div style={{ fontSize: 13 }}>{trade.receive}</div>
                       </div>
                     </div>
-                    {trade.fromTeam && (
-                      <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--border)", fontSize: 12, color: "var(--text-muted)" }}>
-                        Trading with: <strong style={{ color: "var(--text-primary)" }}>{trade.fromTeam}</strong>
-                      </div>
-                    )}
                     <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
                       {trade.whyAccept && (
                         <div>
@@ -775,10 +843,12 @@ TRADE_3:
                   <div className="card"><div className="card-body"><div className="ai-box">{suggestions}</div></div></div>
                 )}
               </div>
-            ) : (
+            ) : !suggestLoading && (
               <div className="card">
-                <div className="card-body" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
-                  <div className="font-semibold" style={{ fontSize: 14 }}>Select a target and hit Suggest Trades</div>
+                <div className="card-body" style={{ textAlign: "center", padding: "80px 20px", color: "var(--text-muted)" }}>
+                  <Zap size={40} style={{ margin: "0 auto 16px", opacity: 0.15 }} />
+                  <div className="font-semibold" style={{ fontSize: 15 }}>Target a player to get started</div>
+                  <div className="text-sm mt-2">Select a team, pick the player you want, then build offer packages</div>
                 </div>
               </div>
             )}
@@ -786,6 +856,7 @@ TRADE_3:
         </div>
       )}
 
+      {/* TEAMS */}
       {/* TEAMS */}
       {activeTab === "teams" && (
         <div className="card">
