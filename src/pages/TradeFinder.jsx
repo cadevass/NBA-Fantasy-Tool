@@ -481,7 +481,7 @@ TRADE_3:
   function parseSuggestions(text) {
     if (!text) return [];
     const trades = [];
-    const blocks = text.split(/TRADE_\d+:/i).filter(b => b.trim());
+    const blocks = text.split(/TRADE_\d+:/i).filter(b => b.trim() && /I_GIVE:/i.test(b));
     blocks.forEach((block, i) => {
       const clean = s => s?.replace(/\*\*/g, '').replace(/\*/g, '').trim();
       const give = clean(block.match(/I_GIVE:\s*([^\n]+)/i)?.[1]) || "";
