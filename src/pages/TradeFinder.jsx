@@ -497,8 +497,6 @@ TRADE_3:
 [aggressive offer — same format]
 
 After TRADE_3 you may add a brief analysis paragraph.`;
-TRADE_3:
-[aggressive offer if they're being stubborn]`;
 
       const text = await callClaude([{ role: "user", content: prompt }]);
       setSuggestions(text);
