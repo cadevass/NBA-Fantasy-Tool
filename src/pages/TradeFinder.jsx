@@ -796,19 +796,21 @@ After TRADE_3 you may add a brief analysis paragraph.`;
 
             {/* Step 3: Get offer packages */}
             {targetPlayer && (
-              <div className="input-group">
-                <label className="label">Additional Context (optional)</label>
-                <textarea className="textarea" rows={3}
-                  placeholder="e.g. Butler drafted Harper at Pick 43, his window is closing with Jokic, he makes bad decisions..."
-                  value={suggestContext} onChange={e => setSuggestContext(e.target.value)} />
+              <div className="flex-col gap-3">
+                <div className="input-group">
+                  <label className="label">Additional Context (optional)</label>
+                  <textarea className="textarea" rows={3}
+                    placeholder="e.g. Butler drafted Harper at Pick 43, his window is closing with Jokic, he makes bad decisions..."
+                    value={suggestContext} onChange={e => setSuggestContext(e.target.value)} />
+                </div>
+                <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
+                  onClick={getSuggestions} disabled={suggestLoading}>
+                  {suggestLoading
+                    ? <><span className="spinner" /> Researching trade packages...</>
+                    : <><Zap size={15} /> Build Offer Packages</>
+                  }
+                </button>
               </div>
-            <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
-                onClick={getSuggestions} disabled={suggestLoading}>
-                {suggestLoading
-                  ? <><span className="spinner" /> Researching trade packages...</>
-                  : <><Zap size={15} /> Build Offer Packages</>
-                }
-              </button>
             )}
           </div>
 
