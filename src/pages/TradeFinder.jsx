@@ -800,7 +800,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
                 <div className="input-group">
                   <label className="label">Additional Context (optional)</label>
                   <textarea className="textarea" rows={3}
-                    placeholder="e.g. Butler drafted Harper at Pick 43, his window is closing with Jokic, he makes bad decisions..."
+                    placeholder="Add your intel on this player and manager..."
                     value={suggestContext} onChange={e => setSuggestContext(e.target.value)} />
                 </div>
                 <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
