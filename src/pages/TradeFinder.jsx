@@ -240,6 +240,7 @@ export default function TradeFinder() {
 
   const [suggestTeamId, setSuggestTeamId] = useState(null);
   const [targetPlayer, setTargetPlayer] = useState(null);
+  const [suggestContext, setSuggestContext] = useState("");
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
 
@@ -416,67 +417,86 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
         : "Startup pick position unknown";
 
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
-Search the web specifically for: (1) ${targetPlayer.name}'s 2026-27 season outlook and role, (2) ${targetTeam?.teamName || targetTeam?.username}'s roster needs heading into 2026-27.
 
-I WANT TO ACQUIRE: ${targetPlayerStr}
+STEP 1 — Search the web for:
+1. ${targetPlayer.name} current dynasty trade value, 2026-27 role outlook, and how managers view him
+2. ${targetTeam?.teamName || targetTeam?.username}'s roster needs and weaknesses heading into 2026-27
+
+STEP 2 — Determine ${targetPlayer.name}'s realistic market value based on what you find. Do not use my asset valuations to determine this — search for it independently.
+
+STEP 3 — Determine what ${targetTeam?.teamName || targetTeam?.username} actually needs based on their roster gaps, age curve, team status, and the notes I have on them.
+
+STEP 4 — Build 3 realistic trade packages I could offer, from minimum to aggressive. The packages must match ${targetPlayer.name}'s actual market value — if he is elite, the packages must reflect that cost. Do not lowball a star.
+
+TARGET: ${targetPlayerStr}
 FROM: ${targetTeam?.teamName || targetTeam?.username} (Status: ${targetTeamCtx?.status || "unknown"})
-THEIR NOTES: ${targetTeamCtx?.notes || "none"}
-STARTUP DRAFT INFO: ${startupPickStr}
+NOTES ON THEM: ${targetTeamCtx?.notes || "none"}
+STARTUP DRAFT: ${startupPickStr}
+ADDITIONAL CONTEXT: ${suggestContext || "none"}
 
-MY TEAM — THE BACKSHOT DYNASTY:
+MY FULL ROSTER:
 ${myRosterStr}
 
 MY DRAFT CAPITAL: ${myPicks}
 
-PLAYER MARKET VALUATIONS — use these exactly:
+MY ASSET HIERARCHY — use this to build packages:
 
-UNTOUCHABLES — I will NOT include these in any offer:
-- Cade Cunningham, Jalen Johnson, Kel'el Ware, Alex Sarr
+ABSOLUTE UNTOUCHABLES — only include for a truly generational proven All-Star calibre return. If suggesting, flag with "NOTE: GENERATIONAL OFFER":
+  Cade Cunningham, Jalen Johnson
 
-SELL CANDIDATES — assets I can offer:
-- Michael Porter Jr.: SELL HIGH. 24.2pts/7.1reb/3.4 3PM career highs, hamstring ended season. Peak value. Return value = young ascending player (22-25) or player + first.
-- De'Aaron Fox: LOW value. Harper situation public, Finals collapse public. Return value = mid-tier asset or late first only.
-- Dejounte Murray: MODERATE value. Post-Achilles, age 29. Return value = mid-tier young asset or pick.
-- Scoot Henderson: SELL NOW. Portland backcourt is Morant/Lillard/Holiday — his role is dead. Age 22 still attracts buyers.
-- Franz Wagner: MODERATE-HIGH. 20.6pts when healthy but injury prone. Only move for significant overpay.
-- Donovan Clingan: HIGH VALUE. Only include if getting top-3 startup pick equivalent back.
+HARD TO MOVE — only include if getting proven first-round talent back. If suggesting, flag with "NOTE: INCLUDES HARD-TO-MOVE ASSET":
+  Kel'el Ware (just became MIL starter post-Giannis trade, 22yo, value exploding)
+  Alex Sarr (16.3pts/7.4reb/2.0blk, 21yo, elite shot-blocker)
 
-HOLD — do NOT include these in any offer:
-Payton Pritchard, Peyton Watson, Bennedict Mathurin, Collin Murray-Boyles, Kasparas Jakucionis
+SELL CANDIDATES — prioritise these first in any package:
+  Michael Porter Jr. — SELL HIGH, 24.2pts/7.1reb career highs, peak value window
+  De'Aaron Fox — LOW value, Harper/Finals situation public, modest return only
+  Dejounte Murray — MODERATE, post-Achilles age 29, mid-tier return
+  Scoot Henderson — SELL NOW, Portland role dead with Morant/Lillard/Holiday
+  Franz Wagner — MODERATE-HIGH, injury prone, only move for significant return
+  Donovan Clingan — HIGH VALUE, only include for top-3 startup pick equivalent
 
-MY PRIORITY NEED: Elite SG with star upside. ${targetPlayer.name} fills this need because [you determine why].
+HOLDABLE BUT AVAILABLE for significant overpay:
+  Peyton Watson — breakout season, 23yo, stocks machine
+  Payton Pritchard — value spiked post-Brown trade
+  Bennedict Mathurin — role ascending with Kawhi gone
+
+DO NOT INCLUDE UNDER ANY CIRCUMSTANCES:
+  Collin Murray-Boyles, Kasparas Jakucionis
 
 THEIR FULL ROSTER:
 ${allTeamRosters}
 
-STARTUP DRAFT CONTEXT (attachment levels):
+STARTUP DRAFT CONTEXT:
 ${draftCtx}
 
 ${DYNASTY_CONTEXT}
 
 CRITICAL RULES:
-1. ONLY suggest players from MY ROSTER or THEIR ROSTER. Never invent players.
-2. FANTASY ONLY — value = fantasy scoring output. Never mention real NBA fit.
-3. Think from THEIR perspective first — what do they actually need that I can offer? What would make them move ${targetPlayer.name}?
-4. The ${startupPickStr} — higher startup pick = more attachment = harder to pry loose = I need to offer more.
-5. 2026-27 OUTLOOK MATTERS — if ${targetPlayer.name}'s role is expanding next season, they'll want more. If contracting, they may be more willing to deal.
-6. Build 3 packages ranging from MINIMUM offer to AGGRESSIVE offer — show me the range of what it might cost.
+1. ONLY use players from MY ROSTER or THEIR ROSTER. Never invent players.
+2. FANTASY ONLY — value = pts/reb/ast/stl×2/blk×2/3PM×0.5/DD+1/TD+2. Never mention real NBA fit.
+3. Match package cost to ${targetPlayer.name}'s ACTUAL market value — do not lowball a star.
+4. Think from THEIR perspective — what do they genuinely need that I have?
+5. Higher startup pick = more attachment = higher asking price.
+6. If 2026-27 role is expanding, they want more. If contracting, they may deal.
 
-IMPORTANT: Output the 3 trade packages FIRST before any analysis. Start your response immediately with TRADE_1: on the first line. You may add analysis after TRADE_3.
-
-Give me exactly 3 offer packages, from cheapest to most aggressive:
+IMPORTANT: Start your response with TRADE_1: on the very first line. No preamble. No headers.
 
 TRADE_1:
-I_GIVE: [minimum realistic offer to start negotiations]
-I_RECEIVE: ${targetPlayer.name} (+ anything else realistic)
+I_GIVE: [minimum realistic offer]
+I_RECEIVE: ${targetPlayer.name}
 FROM_TEAM: ${targetTeam?.teamName || targetTeam?.username}
-WHY_THEY_ACCEPT: [what need does this fill for them]
-WHY_I_WIN: [how does this improve my roster]
+WHY_THEY_ACCEPT: [1-2 sentences — what do they need that I'm giving]
+WHY_I_WIN: [1-2 sentences — how does this improve my roster]
 CONFIDENCE: [High/Medium/Low]
 
 TRADE_2:
-[fair value offer]
+[fair value offer — same format]
 
+TRADE_3:
+[aggressive offer — same format]
+
+After TRADE_3 you may add a brief analysis paragraph.`;
 TRADE_3:
 [aggressive offer if they're being stubborn]`;
 
@@ -778,7 +798,13 @@ TRADE_3:
 
             {/* Step 3: Get offer packages */}
             {targetPlayer && (
-              <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
+              <div className="input-group">
+                <label className="label">Additional Context (optional)</label>
+                <textarea className="textarea" rows={3}
+                  placeholder="e.g. Butler drafted Harper at Pick 43, his window is closing with Jokic, he makes bad decisions..."
+                  value={suggestContext} onChange={e => setSuggestContext(e.target.value)} />
+              </div>
+            <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
                 onClick={getSuggestions} disabled={suggestLoading}>
                 {suggestLoading
                   ? <><span className="spinner" /> Researching trade packages...</>
