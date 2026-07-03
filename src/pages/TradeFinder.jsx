@@ -419,14 +419,14 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
 
 STEP 1 — Search the web for:
-1. ${targetPlayer.name} current dynasty trade value, 2026-27 role outlook, and how managers view him
-2. ${targetTeam?.teamName || targetTeam?.username}'s roster needs and weaknesses heading into 2026-27
+1. ${targetPlayer.name} current dynasty trade value, 2026-27 season outlook, and how the dynasty community values him RIGHT NOW
+2. ${targetTeam?.teamName || targetTeam?.username}'s roster construction, needs, and weaknesses heading into 2026-27
 
-STEP 2 — Determine ${targetPlayer.name}'s realistic market value based on what you find. Do not use my asset valuations to determine this — search for it independently.
+STEP 2 — Based on your research, determine ${targetPlayer.name}'s TRUE dynasty market value. Be honest — if he is elite, say so. Do not undersell him.
 
-STEP 3 — Determine what ${targetTeam?.teamName || targetTeam?.username} actually needs based on their roster gaps, age curve, team status, and the notes I have on them.
+STEP 3 — Look at MY FULL ROSTER below and determine what assets from my team would match ${targetPlayer.name}'s TRUE value. Do not restrict yourself to obvious sell candidates — if ${targetPlayer.name} is worth a franchise piece, the packages should include franchise pieces. Work out what it actually costs and build packages accordingly.
 
-STEP 4 — Build 3 realistic trade packages I could offer, from minimum to aggressive. The packages must match ${targetPlayer.name}'s actual market value — if he is elite, the packages must reflect that cost. Do not lowball a star.
+STEP 4 — Build 3 packages from cheapest to most aggressive. All 3 should be realistic offers that Butler would genuinely consider — not lowballs, not pipe dreams.
 
 TARGET: ${targetPlayerStr}
 FROM: ${targetTeam?.teamName || targetTeam?.username} (Status: ${targetTeamCtx?.status || "unknown"})
@@ -434,67 +434,53 @@ NOTES ON THEM: ${targetTeamCtx?.notes || "none"}
 STARTUP DRAFT: ${startupPickStr}
 ADDITIONAL CONTEXT: ${suggestContext || "none"}
 
-MY FULL ROSTER:
+MY FULL ROSTER (every player available to include in offers):
 ${myRosterStr}
 
 MY DRAFT CAPITAL: ${myPicks}
 
-MY ASSET HIERARCHY — use this to build packages:
+ONLY TWO HARD RESTRICTIONS — never include these:
+- Collin Murray-Boyles
+- Kasparas Jakucionis
 
-ABSOLUTE UNTOUCHABLES — only include for a truly generational proven All-Star calibre return. If suggesting, flag with "NOTE: GENERATIONAL OFFER":
-  Cade Cunningham, Jalen Johnson
+EVERYONE ELSE on my roster is available. 
 
-HARD TO MOVE — only include if getting proven first-round talent back. If suggesting, flag with "NOTE: INCLUDES HARD-TO-MOVE ASSET":
-  Kel'el Ware (just became MIL starter post-Giannis trade, 22yo, value exploding)
-  Alex Sarr (16.3pts/7.4reb/2.0blk, 21yo, elite shot-blocker)
-
-SELL CANDIDATES — prioritise these first in any package:
-  Michael Porter Jr. — SELL HIGH, 24.2pts/7.1reb career highs, peak value window
-  De'Aaron Fox — LOW value, Harper/Finals situation public, modest return only
-  Dejounte Murray — MODERATE, post-Achilles age 29, mid-tier return
-  Scoot Henderson — SELL NOW, Portland role dead with Morant/Lillard/Holiday
-  Franz Wagner — MODERATE-HIGH, injury prone, only move for significant return
-  Donovan Clingan — HIGH VALUE, only include for top-3 startup pick equivalent
-
-HOLDABLE BUT AVAILABLE for significant overpay:
-  Peyton Watson — breakout season, 23yo, stocks machine
-  Payton Pritchard — value spiked post-Brown trade
-  Bennedict Mathurin — role ascending with Kawhi gone
-
-DO NOT INCLUDE UNDER ANY CIRCUMSTANCES:
-  Collin Murray-Boyles, Kasparas Jakucionis
+CRITICAL: Do NOT think in terms of "sell candidates" or "expendable assets." That is the wrong framework. Instead:
+1. First determine what ${targetPlayer.name} is worth in dynasty value (a number or tier)
+2. Then look at MY roster and find combinations of players whose COMBINED dynasty value matches that number
+3. The packages will naturally include my better players if ${targetPlayer.name} is elite — that is correct and realistic
+4. A package of only my weakest assets for an elite player is NOT realistic and should never be suggested
 
 THEIR FULL ROSTER:
 ${allTeamRosters}
 
-STARTUP DRAFT CONTEXT:
+STARTUP DRAFT CONTEXT (attachment levels for both teams):
 ${draftCtx}
 
 ${DYNASTY_CONTEXT}
 
-CRITICAL RULES:
+RULES:
 1. ONLY use players from MY ROSTER or THEIR ROSTER. Never invent players.
-2. FANTASY ONLY — value = pts/reb/ast/stl×2/blk×2/3PM×0.5/DD+1/TD+2. Never mention real NBA fit.
-3. Match package cost to ${targetPlayer.name}'s ACTUAL market value — do not lowball a star.
-4. Think from THEIR perspective — what do they genuinely need that I have?
-5. Higher startup pick = more attachment = higher asking price.
-6. If 2026-27 role is expanding, they want more. If contracting, they may deal.
+2. FANTASY ONLY — value = pts/reb/ast/stl×2/blk×2/3PM×0.5/DD+1/TD+2. Never mention real NBA fit or team chemistry.
+3. Think from THEIR perspective first — what do they genuinely need? What would make them move ${targetPlayer.name}?
+4. Match the cost to the player's TRUE value. If he is elite, the packages should hurt. That is realistic.
+5. Startup draft context tells you attachment levels — a player drafted in round 1-2 who is performing well will cost more to pry loose.
 
 IMPORTANT: Start your response with TRADE_1: on the very first line. No preamble. No headers.
 
 TRADE_1:
-I_GIVE: [minimum realistic offer]
+I_GIVE: [minimum realistic offer — should still be meaningful if target is elite]
 I_RECEIVE: ${targetPlayer.name}
 FROM_TEAM: ${targetTeam?.teamName || targetTeam?.username}
-WHY_THEY_ACCEPT: [1-2 sentences — what do they need that I'm giving]
-WHY_I_WIN: [1-2 sentences — how does this improve my roster]
+WHY_THEY_ACCEPT: [1-2 sentences]
+WHY_I_WIN: [1-2 sentences]
 CONFIDENCE: [High/Medium/Low]
 
 TRADE_2:
 [fair value offer — same format]
 
 TRADE_3:
-[aggressive offer — same format]
+[most aggressive offer — same format]
 
 After TRADE_3 you may add a brief analysis paragraph.`;
 
