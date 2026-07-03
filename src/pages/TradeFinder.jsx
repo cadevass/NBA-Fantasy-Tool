@@ -439,17 +439,13 @@ ${myRosterStr}
 
 MY DRAFT CAPITAL: ${myPicks}
 
-ONLY TWO HARD RESTRICTIONS — never include these:
-- Collin Murray-Boyles
-- Kasparas Jakucionis
-
-EVERYONE ELSE on my roster is available. 
+EVERY player on my roster is available at the right price. No restrictions.
 
 CRITICAL: Do NOT think in terms of "sell candidates" or "expendable assets." That is the wrong framework. Instead:
-1. First determine what ${targetPlayer.name} is worth in dynasty value (a number or tier)
-2. Then look at MY roster and find combinations of players whose COMBINED dynasty value matches that number
-3. The packages will naturally include my better players if ${targetPlayer.name} is elite — that is correct and realistic
-4. A package of only my weakest assets for an elite player is NOT realistic and should never be suggested
+1. First determine what ${targetPlayer.name} is worth in dynasty value
+2. Then look at MY roster and find combinations of players whose COMBINED dynasty value matches that
+3. If ${targetPlayer.name} is elite, the packages should include my better players — that is realistic
+4. A package of only my weakest assets for an elite player is NOT realistic and must never be suggested
 
 THEIR FULL ROSTER:
 ${allTeamRosters}
