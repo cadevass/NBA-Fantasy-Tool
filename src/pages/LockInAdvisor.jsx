@@ -374,6 +374,12 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
             <div className="card"><div className="card-body" style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>No lock-in decisions recorded yet</div></div>
           ) : (
             <div className="flex-col gap-3">
+              <div className="flex justify-end">
+                <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }}
+                  onClick={() => { if (confirm("Clear all history?")) setSessions([]); }}>
+                  <X size={12} /> Clear All
+                </button>
+              </div>
               {sessions.map(s => (
                 <div key={s.id} className="card">
                   <div className="card-header">
@@ -381,6 +387,10 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
                     <div className="flex gap-3 items-center" style={{ marginLeft: "auto" }}>
                       <span className="font-mono font-semibold" style={{ fontSize: 18 }}>{s.score} pts</span>
                       {s.verdict && <div className={`verdict ${s.verdict === "lock" ? "verdict-lock" : "verdict-ride"}`}>{s.verdict === "lock" ? "Locked" : "Let Ride"}</div>}
+                      <button className="btn btn-ghost btn-xs" style={{ color: "var(--red)" }}
+                        onClick={() => setSessions(prev => prev.filter(x => x.id !== s.id))}>
+                        <X size={12} />
+                      </button>
                     </div>
                   </div>
                   <div className="card-body">
