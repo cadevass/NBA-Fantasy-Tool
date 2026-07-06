@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { Lock, TrendingUp, Zap, Plus, X, RefreshCw } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { callClaude } from "../utils/api";
-import { calcFantasyScore, LOCK_IN_CONTEXT } from "../utils/league";
+import { calcFantasyScore, calcSeasonAverageFP, LOCK_IN_CONTEXT } from "../utils/league";
+import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { useSleeperContext } from "../context/SleeperContext";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -24,6 +25,10 @@ function StatInput({ label, field, value, onChange }) {
 
 export default function LockInAdvisor() {
   const { myTeam } = useSleeperContext();
+  const [nbaPlayers, setNbaPlayers] = useState([]);
+  useEffect(() => {
+    fetchPlayerSeasonStats().then(setNbaPlayers);
+  }, []);
   const ALL_ROSTER = myTeam ? [...myTeam.starters, ...myTeam.bench].map(p => p.name) : [];
   const [sessions, setSessions] = useLocalStorage("lockin_sessions", []);
   const [playerName, setPlayerName] = useState(ALL_ROSTER[0] || "");
@@ -47,6 +52,11 @@ export default function LockInAdvisor() {
   }, [game]);
 
   function updateStat(field, val) { setGame(g => ({ ...g, [field]: val })); }
+  function getSeasonAvgFP(name) {
+    const player = findPlayer(nbaPlayers, name);
+    if (!player) return null;
+    return calcSeasonAverageFP(player);
+  }
   function addRemainingGame() { setRemainingGames(prev => [...prev, { day: "Sun", opponent: "vs GSW", enabled: true }]); }
   function removeRemainingGame(i) { setRemainingGames(prev => prev.filter((_, idx) => idx !== i)); }
   function updateRemaining(i, field, val) { setRemainingGames(prev => prev.map((g, idx) => idx === i ? { ...g, [field]: val } : g)); }
@@ -69,25 +79,30 @@ export default function LockInAdvisor() {
       const recentStr = playerRecent.length
         ? playerRecent.map((g, i) => `Game ${i+1}: ${g.score}pts fantasy (${g.pts}pts/${g.reb}reb/${g.ast}ast)`).join(" | ")
         : "No recent game history stored";
-
+      const seasonAvgFP = getSeasonAvgFP(activeName);
+      const delta = seasonAvgFP ? Math.round((fantasyScore - seasonAvgFP) * 10) / 10 : null;
+      const deltaStr = delta !== null ? `${delta > 0 ? "+" : ""}${delta} vs season average` : "Season average unavailable";
       const prompt = `Lock-In Decision for ${activeName}:
 
 COMPLETED GAME: ${game.pts}pts / ${game.reb}reb / ${game.ast}ast / ${game.stl}stl / ${game.blk}blk / ${game.to}TO / ${game.threesMade} 3PM
-FANTASY SCORE: ${fantasyScore} points
+TONIGHT'S FANTASY SCORE: ${fantasyScore} FP
+SEASON AVERAGE FANTASY SCORE: ${seasonAvgFP ? seasonAvgFP + " FP" : "Unknown"} (calculated using this league's exact scoring system)
+DELTA: ${deltaStr}
 RECENT FORM: ${recentStr}
-SEASON AVG: ${avgRecentScore ? `${avgRecentScore} pts` : "Unknown"}
-REMAINING GAMES: ${remainingStr}
+REMAINING GAMES THIS WEEK: ${remainingStr}
 INJURY STATUS: ${injuryStatus}
 CONTEXT: ${extraContext || "None"}
 
 ${LOCK_IN_CONTEXT}
 
-Give me:
-1. SCORE ASSESSMENT — above or below average?
-2. REMAINING SCHEDULE — realistic chance of a better game?
-3. RISK FACTORS — injury, load management, B2B
-4. LOCK-IN CEILING CHECK — is this near their ceiling?
-5. VERDICT: LOCK IT IN or LET IT RIDE — with confidence (High/Medium/Low)
+Think entirely in fantasy points. Give me:
+1. SCORE ASSESSMENT — is ${fantasyScore} FP above or below their ${seasonAvgFP ? seasonAvgFP + " FP" : "unknown"} season average?
+2. REMAINING SCHEDULE — realistic ceiling for a better FP score this week?
+3. RISK FACTORS — injury, load management, B2B, matchup
+4. VERDICT: LOCK IT IN or LET IT RIDE — with confidence (High/Medium/Low)
+5. REASONING — 2-3 sentences in fantasy point terms only
+
+Be direct and opinionated. No "it depends".`;
 6. REASONING — 2-3 sentences max
 
 Be direct.`;
@@ -96,7 +111,7 @@ Be direct.`;
       const upper = text.toUpperCase();
       const verdict = upper.includes("LOCK IT IN") || upper.includes("LOCK IN") ? "lock" : upper.includes("LET IT RIDE") ? "ride" : null;
 
-      const session = { id: Date.now(), player: activeName, game: { ...game }, score: fantasyScore, analysis: text, verdict, date: new Date().toISOString(), remainingGames: remainingGames.filter(g => g.enabled) };
+      const session = { id: Date.now(), player: activeName, game: { ...game }, score: fantasyScore, seasonAvgFP, delta, analysis: text, verdict, date: new Date().toISOString(), remainingGames: remainingGames.filter(g => g.enabled) };
       setResult(session);
       setSessions(prev => [session, ...prev.slice(0, 19)]);
       saveAsRecentGame();
@@ -249,12 +264,22 @@ Be direct.`;
                   <div className="flex gap-3 mb-3">
                     <div className="stat-cell" style={{ flex: 1, padding: "12px", textAlign: "center" }}>
                       <div className="font-mono font-semibold" style={{ fontSize: 28 }}>{result.score}</div>
-                      <div className="stat-cell-lbl">This Game</div>
+                      <div className="stat-cell-lbl">Tonight</div>
                     </div>
-                    {avgRecentScore && (
+                    {result.seasonAvgFP && (
                       <div className="stat-cell" style={{ flex: 1, padding: "12px", textAlign: "center" }}>
-                        <div className="font-mono font-semibold" style={{ fontSize: 28 }}>{avgRecentScore}</div>
-                        <div className="stat-cell-lbl">Recent Avg</div>
+                        <div className="font-mono font-semibold" style={{ fontSize: 28 }}>{result.seasonAvgFP}</div>
+                        <div className="stat-cell-lbl">Season Avg FP</div>
+                      </div>
+                    )}
+                    {result.delta !== null && result.delta !== undefined && (
+                      <div className="stat-cell" style={{ flex: 1, padding: "12px", textAlign: "center",
+                        background: result.delta > 0 ? "var(--green-bg)" : "var(--red-bg)" }}>
+                        <div className="font-mono font-semibold" style={{ fontSize: 24,
+                          color: result.delta > 0 ? "var(--green)" : "var(--red)" }}>
+                          {result.delta > 0 ? "+" : ""}{result.delta}
+                        </div>
+                        <div className="stat-cell-lbl">vs Avg</div>
                       </div>
                     )}
                     <div className="stat-cell" style={{ flex: 1, padding: "12px", textAlign: "center" }}>

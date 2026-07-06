@@ -39,6 +39,53 @@ export function calcFantasyScore(stats) {
   return Math.round(score * 10) / 10;
 }
 
+
+// Estimate season average fantasy score from per-game averages
+// Includes estimated bonus frequency based on statistical likelihood
+export function calcSeasonAverageFP(stats) {
+  const { pts = 0, reb = 0, ast = 0, stl = 0, blk = 0, to = 0, threesMade = 0, gp = 1 } = stats;
+
+  // Base fantasy score from averages
+  let base = 0;
+  base += pts * SCORING.pts;
+  base += reb * SCORING.reb;
+  base += ast * SCORING.ast;
+  base += stl * SCORING.stl;
+  base += blk * SCORING.blk;
+  base += to * SCORING.to;
+  base += threesMade * SCORING.threesMade;
+
+  // Estimate Double-Double frequency
+  // A player averaging 10+ in two categories gets near full bonus
+  // We estimate frequency as min(cat1/10, 1) * min(cat2/10, 1)
+  const ptsCat = Math.min(pts / 10, 1);
+  const rebCat = Math.min(reb / 10, 1);
+  const astCat = Math.min(ast / 10, 1);
+  const ddFreq = Math.max(ptsCat * rebCat, ptsCat * astCat, rebCat * astCat);
+  const tdFreq = ptsCat * rebCat * astCat;
+  
+  // DD bonus = frequency * bonus value (subtract TD share since TD already includes DD)
+  const ddBonus = (ddFreq - tdFreq) * SCORING.doubleDouble;
+  const tdBonus = tdFreq * (SCORING.tripleDouble + SCORING.doubleDouble);
+
+  // Estimate 40+ point game frequency
+  // Rough model: players averaging X pts hit 40+ roughly (X/40)^3 of games
+  // e.g. 30pt avg -> (30/40)^3 = 0.42 -> too high, use (X-20)/20 capped
+  const fortyFreq = pts >= 25 ? Math.min(Math.pow((pts - 20) / 20, 2), 0.4) : pts >= 20 ? 0.02 : 0;
+  const fiftyFreq = pts >= 30 ? Math.min(Math.pow((pts - 25) / 25, 3), 0.05) : 0;
+  const fortyBonus = (fortyFreq - fiftyFreq) * SCORING.bonus40pts;
+  const fiftyBonus = fiftyFreq * (SCORING.bonus40pts + SCORING.bonus50pts);
+
+  // 15+ ast bonus — extremely rare, only for elite playmakers
+  const astBonus = ast >= 12 ? 0.1 * SCORING.bonus15ast : ast >= 10 ? 0.02 * SCORING.bonus15ast : 0;
+
+  // 20+ reb bonus — almost never happens
+  const rebBonus = reb >= 15 ? 0.05 * SCORING.bonus20reb : 0;
+
+  const total = base + ddBonus + tdBonus + fortyBonus + fiftyBonus + astBonus + rebBonus;
+  return Math.round(total * 10) / 10;
+}
+
 export const MY_ROSTER = {
   starters: [
     { name: "Cade Cunningham", pos: ["PG"], team: "DET", note: "Franchise cornerstone" },
