@@ -72,6 +72,28 @@ export default function LockInAdvisor() {
     return Math.round(playerRecent.reduce((s, g) => s + (g.score || 0), 0) / playerRecent.length * 10) / 10;
   }, [playerRecent]);
 
+  function parseLockIn(text) {
+    if (!text) return null;
+    try {
+      const clean = s => s?.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#+/g, '').replace(/---/g, '').trim();
+      const extract = key => {
+        const m = text.match(new RegExp(key + ':\\s*([^\\n]+(?:\\n(?!' + 
+          'SCORE_ASSESSMENT:|SCHEDULE_OUTLOOK:|RISK_FACTORS:|VERDICT:|CONFIDENCE:|REASONING:)[^\\n]*)*)', 'i'));
+        return m ? clean(m[1]) : null;
+      };
+      const verdictM = text.match(/VERDICT:\s*(LOCK IT IN|LET IT RIDE)/i);
+      const confidenceM = text.match(/CONFIDENCE:\s*(High|Medium|Low)/i);
+      return {
+        scoreAssessment: extract('SCORE_ASSESSMENT'),
+        scheduleOutlook: extract('SCHEDULE_OUTLOOK'),
+        riskFactors: extract('RISK_FACTORS'),
+        verdict: verdictM ? (verdictM[1].toUpperCase().includes('LOCK') ? 'lock' : 'ride') : null,
+        confidence: confidenceM ? confidenceM[1] : null,
+        reasoning: extract('REASONING'),
+      };
+    } catch { return null; }
+  }
+
   async function analyse() {
     setLoading(true); setResult(null);
     try {
@@ -95,20 +117,21 @@ CONTEXT: ${extraContext || "None"}
 
 ${LOCK_IN_CONTEXT}
 
-Think entirely in fantasy points. Give me:
-1. SCORE ASSESSMENT — is ${fantasyScore} FP above or below their ${seasonAvgFP ? seasonAvgFP + " FP" : "unknown"} season average?
-2. REMAINING SCHEDULE — realistic ceiling for a better FP score this week?
-3. RISK FACTORS — injury, load management, B2B, matchup
-4. VERDICT: LOCK IT IN or LET IT RIDE — with confidence (High/Medium/Low)
-5. REASONING — 2-3 sentences in fantasy point terms only
+CRITICAL: Respond in this exact format only. No markdown headers, no asterisks, no dashes.
 
-Be direct and opinionated. No "it depends".`;
+SCORE_ASSESSMENT: [1-2 sentences on whether ${fantasyScore} FP is above/below ${seasonAvgFP ? seasonAvgFP + " FP" : "unknown"} season average and why it matters]
+SCHEDULE_OUTLOOK: [1-2 sentences on realistic FP ceiling for remaining games this week]
+RISK_FACTORS: [1-2 sentences on injury, fatigue, B2B, matchup risks]
+VERDICT: [LOCK IT IN or LET IT RIDE]
+CONFIDENCE: [High or Medium or Low]
+REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated, no hedging]`;
 
       const text = await callClaude([{ role: "user", content: prompt }]);
       const upper = text.toUpperCase();
       const verdict = upper.includes("LOCK IT IN") || upper.includes("LOCK IN") ? "lock" : upper.includes("LET IT RIDE") ? "ride" : null;
 
-      const session = { id: Date.now(), player: activeName, game: { ...game }, score: fantasyScore, seasonAvgFP, delta, analysis: text, verdict, date: new Date().toISOString(), remainingGames: remainingGames.filter(g => g.enabled) };
+      const parsed = parseLockIn(text);
+      const session = { id: Date.now(), player: activeName, game: { ...game }, score: fantasyScore, seasonAvgFP, delta, analysis: text, parsed, verdict: parsed?.verdict || verdict, date: new Date().toISOString(), remainingGames: remainingGames.filter(g => g.enabled) };
       setResult(session);
       setSessions(prev => [session, ...prev.slice(0, 19)]);
       saveAsRecentGame();
@@ -284,7 +307,38 @@ Be direct and opinionated. No "it depends".`;
                       <div className="stat-cell-lbl">Games Left</div>
                     </div>
                   </div>
-                  <div className="ai-box">{result.analysis}</div>
+                  {result.parsed ? (
+                    <div className="flex-col gap-0" style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+                      {result.parsed.scoreAssessment && (
+                        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Score Assessment</div>
+                          <div style={{ fontSize: 13, lineHeight: 1.6 }}>{result.parsed.scoreAssessment}</div>
+                        </div>
+                      )}
+                      {result.parsed.scheduleOutlook && (
+                        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Schedule Outlook</div>
+                          <div style={{ fontSize: 13, lineHeight: 1.6 }}>{result.parsed.scheduleOutlook}</div>
+                        </div>
+                      )}
+                      {result.parsed.riskFactors && (
+                        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Risk Factors</div>
+                          <div style={{ fontSize: 13, lineHeight: 1.6 }}>{result.parsed.riskFactors}</div>
+                        </div>
+                      )}
+                      {result.parsed.reasoning && (
+                        <div style={{ padding: "14px 16px", background: result.parsed.verdict === "lock" ? "var(--green-bg)" : "var(--red-bg)" }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: result.parsed.verdict === "lock" ? "var(--green)" : "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                            {result.parsed.confidence && `${result.parsed.confidence} Confidence · `}Reasoning
+                          </div>
+                          <div style={{ fontSize: 13, lineHeight: 1.6, fontWeight: 500 }}>{result.parsed.reasoning}</div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="ai-box">{result.analysis}</div>
+                  )}
                 </div>
               </div>
             ) : (
