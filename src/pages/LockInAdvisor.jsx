@@ -103,9 +103,6 @@ Think entirely in fantasy points. Give me:
 5. REASONING — 2-3 sentences in fantasy point terms only
 
 Be direct and opinionated. No "it depends".`;
-6. REASONING — 2-3 sentences max
-
-Be direct.`;
 
       const text = await callClaude([{ role: "user", content: prompt }]);
       const upper = text.toUpperCase();
