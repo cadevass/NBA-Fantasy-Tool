@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Lock, TrendingUp, Zap, Plus, X, RefreshCw } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { callClaude } from "../utils/api";
