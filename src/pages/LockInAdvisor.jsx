@@ -152,18 +152,8 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
                   ? <select className="select" value={playerName} onChange={e => setPlayerName(e.target.value)}>{ALL_ROSTER.map(n => <option key={n}>{n}</option>)}</select>
                   : <input className="input" placeholder="Player name..." value={customPlayer} onChange={e => setCustomPlayer(e.target.value)} />
                 }
-{avgRecentScore && (
-                        <div style={{ background: "var(--accent-light)", border: "1px solid #F5D98A", borderRadius: "var(--radius)", padding: "6px 10px", textAlign: "center", minWidth: 60 }}>
-                          <div className="font-mono font-semibold" style={{ fontSize: 15, color: "var(--accent-dim)" }}>{avgRecentScore}</div>
-                          <div className="text-xs" style={{ color: "var(--accent-dim)" }}>Avg</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
-
             <div className="card">
               <div className="card-header">
                 <span className="card-title">Completed Game Stats</span>
