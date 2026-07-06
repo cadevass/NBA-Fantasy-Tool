@@ -35,7 +35,6 @@ export default function LockInAdvisor() {
   const [customPlayer, setCustomPlayer] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [game, setGame] = useState({ ...EMPTY_GAME });
-  const [recentGames, setRecentGames] = useLocalStorage("lockin_recent", {});
   const [remainingGames, setRemainingGames] = useState([{ day: "Thu", opponent: "vs BOS", enabled: true }]);
   const [injuryStatus, setInjuryStatus] = useState("Healthy");
   const [extraContext, setExtraContext] = useState("");
@@ -61,16 +60,6 @@ export default function LockInAdvisor() {
   function removeRemainingGame(i) { setRemainingGames(prev => prev.filter((_, idx) => idx !== i)); }
   function updateRemaining(i, field, val) { setRemainingGames(prev => prev.map((g, idx) => idx === i ? { ...g, [field]: val } : g)); }
 
-  function saveAsRecentGame() {
-    const entry = { ...game, score: fantasyScore, date: new Date().toISOString() };
-    setRecentGames(prev => ({ ...prev, [activeName]: [entry, ...(prev[activeName] || []).slice(0, 4)] }));
-  }
-
-  const playerRecent = recentGames[activeName] || [];
-  const avgRecentScore = useMemo(() => {
-    if (!playerRecent.length) return null;
-    return Math.round(playerRecent.reduce((s, g) => s + (g.score || 0), 0) / playerRecent.length * 10) / 10;
-  }, [playerRecent]);
 
   function parseLockIn(text) {
     if (!text) return null;
@@ -98,9 +87,6 @@ export default function LockInAdvisor() {
     setLoading(true); setResult(null);
     try {
       const remainingStr = remainingGames.filter(g => g.enabled).map(g => `${g.day}: ${g.opponent}`).join(", ") || "No games remaining";
-      const recentStr = playerRecent.length
-        ? playerRecent.map((g, i) => `Game ${i+1}: ${g.score}pts fantasy (${g.pts}pts/${g.reb}reb/${g.ast}ast)`).join(" | ")
-        : "No recent game history stored";
       const seasonAvgFP = getSeasonAvgFP(activeName);
       const delta = seasonAvgFP ? Math.round((fantasyScore - seasonAvgFP) * 10) / 10 : null;
       const deltaStr = delta !== null ? `${delta > 0 ? "+" : ""}${delta} vs season average` : "Season average unavailable";
@@ -110,7 +96,6 @@ COMPLETED GAME: ${game.pts}pts / ${game.reb}reb / ${game.ast}ast / ${game.stl}st
 TONIGHT'S FANTASY SCORE: ${fantasyScore} FP
 SEASON AVERAGE FANTASY SCORE: ${seasonAvgFP ? seasonAvgFP + " FP" : "Unknown"} (calculated using this league's exact scoring system)
 DELTA: ${deltaStr}
-RECENT FORM: ${recentStr}
 REMAINING GAMES THIS WEEK: ${remainingStr}
 INJURY STATUS: ${injuryStatus}
 CONTEXT: ${extraContext || "None"}
@@ -134,7 +119,6 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
       const session = { id: Date.now(), player: activeName, game: { ...game }, score: fantasyScore, seasonAvgFP, delta, analysis: text, parsed, verdict: parsed?.verdict || verdict, date: new Date().toISOString(), remainingGames: remainingGames.filter(g => g.enabled) };
       setResult(session);
       setSessions(prev => [session, ...prev.slice(0, 19)]);
-      saveAsRecentGame();
     } catch (e) { setResult({ analysis: `Error: ${e.message}`, verdict: null }); }
     finally { setLoading(false); }
   }
@@ -168,17 +152,7 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
                   ? <select className="select" value={playerName} onChange={e => setPlayerName(e.target.value)}>{ALL_ROSTER.map(n => <option key={n}>{n}</option>)}</select>
                   : <input className="input" placeholder="Player name..." value={customPlayer} onChange={e => setCustomPlayer(e.target.value)} />
                 }
-                {playerRecent.length > 0 && (
-                  <div className="mt-3">
-                    <div className="label mb-1">Recent Form — {activeName}</div>
-                    <div className="flex gap-2" style={{ flexWrap: "wrap" }}>
-                      {playerRecent.map((g, i) => (
-                        <div key={i} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "6px 10px", textAlign: "center", minWidth: 60 }}>
-                          <div className="font-mono font-semibold" style={{ fontSize: 15 }}>{g.score}</div>
-                          <div className="text-xs text-muted">G{i + 1}</div>
-                        </div>
-                      ))}
-                      {avgRecentScore && (
+{avgRecentScore && (
                         <div style={{ background: "var(--accent-light)", border: "1px solid #F5D98A", borderRadius: "var(--radius)", padding: "6px 10px", textAlign: "center", minWidth: 60 }}>
                           <div className="font-mono font-semibold" style={{ fontSize: 15, color: "var(--accent-dim)" }}>{avgRecentScore}</div>
                           <div className="text-xs" style={{ color: "var(--accent-dim)" }}>Avg</div>
@@ -360,7 +334,7 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.pos.join("/")} · {p.team}</div>
                   </div>
-                  {recentGames[p.name]?.[0] && <div className="font-mono text-sm">{recentGames[p.name][0].score}</div>}
+
                 </div>
               ))}
             </div>
