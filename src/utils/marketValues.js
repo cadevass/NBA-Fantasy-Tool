@@ -3,12 +3,26 @@ import { dbGet, dbSet } from "./supabase";
 const KEY = "market_values";
 
 export async function getMarketValues() {
+  // Check localStorage first (works on corporate network)
+  const local = localStorage.getItem(KEY);
+  const localData = local ? JSON.parse(local) : null;
+  
   try {
     const data = await dbGet("app_settings", KEY);
-    return data || [];
+    if (data && data.length > 0) {
+      // Supabase has data — cache to localStorage and return
+      localStorage.setItem(KEY, JSON.stringify(data));
+      return data;
+    }
+    // Supabase empty but we have local data — push it up
+    if (localData && localData.length > 0) {
+      await dbSet("app_settings", KEY, localData);
+      return localData;
+    }
+    return [];
   } catch {
-    const local = localStorage.getItem(KEY);
-    return local ? JSON.parse(local) : [];
+    // Supabase unavailable — use localStorage
+    return localData || [];
   }
 }
 
