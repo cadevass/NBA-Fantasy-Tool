@@ -112,18 +112,54 @@ export default function MarketValueModal({ onClose }) {
         {adding && (
           <div style={{ padding: "16px", borderBottom: "1px solid var(--border)", background: "var(--surface-2)", flexShrink: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12 }}>Add New Player</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 120px 120px", gap: 8, marginBottom: 8 }}>
-              <input className="input" placeholder="Player name" value={addForm.name}
-                onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} style={{ fontSize: 13 }} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+              {/* Category toggle */}
+              <div style={{ gridColumn: "1 / -1", display: "flex", gap: 8 }}>
+                {CATEGORIES.map(c => (
+                  <button key={c} className={`btn btn-xs ${addForm.category === c ? "btn-accent" : "btn-ghost"}`}
+                    onClick={() => setAddForm(f => ({ ...f, category: c, name: "", ownerTeam: "" }))}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+              {/* My Roster — direct dropdown */}
+              {addForm.category === "My Roster" ? (
+                <select className="select" value={addForm.name}
+                  onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} style={{ fontSize: 13 }}>
+                  <option value="">Select from my roster...</option>
+                  {(myTeam ? [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi||[])] : []).map(p => (
+                    <option key={p.name} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+              ) : (
+                /* League Player — pick owner first, then player */
+                <>
+                  <select className="select" value={addForm.ownerTeam || ""}
+                    onChange={e => setAddForm(f => ({ ...f, ownerTeam: e.target.value, name: "" }))} style={{ fontSize: 13 }}>
+                    <option value="">Select owner...</option>
+                    {(teams || []).filter(t => !t.isMe).map(t => (
+                      <option key={t.rosterId} value={t.rosterId}>{t.teamName || t.username}</option>
+                    ))}
+                  </select>
+                  {addForm.ownerTeam && (() => {
+                    const ownerTeam = (teams || []).find(t => t.rosterId === parseInt(addForm.ownerTeam));
+                    const roster = ownerTeam ? [...ownerTeam.starters, ...ownerTeam.bench, ...(ownerTeam.taxi||[])] : [];
+                    return (
+                      <select className="select" value={addForm.name}
+                        onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} style={{ fontSize: 13 }}>
+                        <option value="">Select player...</option>
+                        {roster.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                      </select>
+                    );
+                  })()}
+                </>
+              )}
               <input className="input" type="number" min={0} max={100} value={addForm.value}
-                onChange={e => setAddForm(f => ({ ...f, value: parseInt(e.target.value) || 0 }))} style={{ fontSize: 13 }} />
+                onChange={e => setAddForm(f => ({ ...f, value: parseInt(e.target.value) || 0 }))}
+                style={{ fontSize: 13 }} placeholder="Value 0-100" />
               <select className="select" value={addForm.trend}
                 onChange={e => setAddForm(f => ({ ...f, trend: e.target.value }))} style={{ fontSize: 13 }}>
                 {TRENDS.map(t => <option key={t}>{t}</option>)}
-              </select>
-              <select className="select" value={addForm.category}
-                onChange={e => setAddForm(f => ({ ...f, category: e.target.value }))} style={{ fontSize: 13 }}>
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <textarea className="textarea" placeholder="One-line summary..." rows={2} value={addForm.summary}
