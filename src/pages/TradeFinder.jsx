@@ -301,6 +301,13 @@ export default function TradeFinder() {
         ? `${selectedTeam.teamName || selectedTeam.username} — Status: ${getTeamContext(selectedTeam.rosterId).status || "unknown"}`
         : "Unknown";
 
+      // Build market value context
+      const mvContext = [...giving, ...receiving].map(a => {
+        if (a.type === "pick") return null;
+        const mv = marketValues.find(m => m.name.toLowerCase().replace(/[^a-z0-9 ]/g, '') === a.label.toLowerCase().replace(/[^a-z0-9 ]/g, ''));
+        return mv ? `${a.label}: ${mv.value}/100 (${mv.trend}) — ${mv.summary}` : null;
+      }).filter(Boolean).join("\n");
+
       const prompt = `Evaluate this dynasty fantasy basketball trade. Search the web for any current player news or injuries.
 
 I GIVE:
@@ -310,19 +317,22 @@ I RECEIVE:
 ${recStr}
 
 OTHER TEAM: ${teamCtx}
-STARTUP DRAFT CONTEXT (who drafted who and at what pick — use this to gauge how much each manager values their players):
-${buildDraftContext(startupDraft, teams || [])};
-CONTEXT: ${otherContext || "None"}
-CONTEXT: ${otherContext || "None"}
+
+STARTUP DRAFT CONTEXT:
+${buildDraftContext(startupDraft, teams || [])}
+
+MARKET VALUE DATABASE (grounded player valuations — use as baseline):
+${mvContext || "No players found in market value database"}
+
+CRITICAL INTEL (treat this as hard facts — declined offers, negotiation history, key context):
+${otherContext || "None"}
 
 ${DYNASTY_CONTEXT}
 
-CRITICAL INSTRUCTION: Your response must start with the structured scoring block below. No headers, no markdown, no preamble. Start your response with DYNASTY_VALUE_DELTA on the very first line.
-
-IMPORTANT: Fantasy dynasty only. Positional slots and scoring output — not real NBA roster construction.
+CRITICAL INSTRUCTION: Start your response with DYNASTY_VALUE_DELTA on the very first line. No headers, no markdown, no preamble.
+IMPORTANT: Fantasy dynasty only. Positional slots and scoring output only.
 
 Score each 0-100 with 1-2 sentences reasoning:
-
 DYNASTY_VALUE_DELTA: [score] | [reasoning]
 IMMEDIATE_IMPACT: [score] | [reasoning]
 AGE_CURVE_FIT: [score] | [reasoning]
