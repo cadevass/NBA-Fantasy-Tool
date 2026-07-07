@@ -11,6 +11,7 @@ import { dbSet, dbGet } from "../utils/supabase";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import MarketValueModal from "../components/MarketValueModal";
 import { buildDraftContext } from "../utils/sleeperDraft";
+import { getMarketValues } from "../utils/marketValues";
 
 const PICK_YEARS = ["2026", "2027", "2028"];
 const PICK_ROUNDS = ["1st", "2nd", "3rd"];
@@ -242,6 +243,8 @@ export default function TradeFinder() {
   const [suggestTeamId, setSuggestTeamId] = useState(null);
   const [targetPlayer, setTargetPlayer] = useState(null);
   const [suggestContext, setSuggestContext] = useState("");
+  const [marketValues, setMarketValues] = useState([]);
+  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
   const [showMarketValues, setShowMarketValues] = useState(false);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
@@ -466,21 +469,24 @@ RULES:
 
 IMPORTANT: Start your response with TRADE_1: on the very first line. No preamble. No headers.
 
+Generate exactly 3 packages in escalating order:
+- TRADE_1: Opening Anchor — lowest realistic offer to start negotiations. Still meaningful but leaves room to negotiate up.
+- TRADE_2: Fair Value — what the trade actually costs based on market values. Both sides should feel this is roughly fair.
+- TRADE_3: Walk-Away Max — the most you would pay. Only go here if they're stubborn. If they reject this, walk away.
+
 TRADE_1:
-I_GIVE: [minimum realistic offer — should still be meaningful if target is elite]
+I_GIVE: [opening anchor package]
 I_RECEIVE: ${targetPlayer.name}
 FROM_TEAM: ${targetTeam?.teamName || targetTeam?.username}
-WHY_THEY_ACCEPT: [1-2 sentences]
-WHY_I_WIN: [1-2 sentences]
+WHY_THEY_ACCEPT: [1-2 sentences — what genuine need does this fill for them]
+WHY_I_WIN: [1-2 sentences — how does this improve your roster]
 CONFIDENCE: [High/Medium/Low]
 
 TRADE_2:
-[fair value offer — same format]
+[same format — fair value]
 
 TRADE_3:
-[most aggressive offer — same format]
-
-After TRADE_3 you may add a brief analysis paragraph.`;
+[same format — walk-away max]`;
 
       const text = await callClaude([{ role: "user", content: prompt }]);
       setSuggestions(text);
@@ -528,7 +534,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
         <div className="flex gap-2 items-center">
           <button className="btn btn-ghost btn-sm" onClick={() => setShowMarketValues(true)} style={{ fontSize: 12 }}>📊 Market Values</button>
           <button className={`tab-btn${activeTab === "evaluate" ? " active" : ""}`} onClick={() => setActiveTab("evaluate")}>Evaluate</button>
-          <button className={`tab-btn${activeTab === "suggest" ? " active" : ""}`} onClick={() => setActiveTab("suggest")}>Suggest</button>
+          <button className={`tab-btn${activeTab === "suggest" ? " active" : ""}`} onClick={() => setActiveTab("suggest")}>Offer Builder</button>
           <button className={`tab-btn${activeTab === "teams" ? " active" : ""}`} onClick={() => setActiveTab("teams")}>Teams</button>
           <button className={`tab-btn${activeTab === "history" ? " active" : ""}`} onClick={() => setActiveTab("history")}>History</button>
         </div>
@@ -717,7 +723,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
         </div>
       )}
 
-      {/* SUGGEST */}
+      {/* OFFER BUILDER */}
       {activeTab === "suggest" && (
         <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 20, alignItems: "start" }}>
           {/* LEFT PANEL */}
@@ -755,6 +761,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Click a player to target them</div>
                     {roster.map(p => {
                       const s = getStats(p.name);
+                      const mv = marketValues.find(m => m.name.toLowerCase() === p.name.toLowerCase());
                       const isSelected = targetPlayer?.name === p.name;
                       return (
                         <div key={p.name}
@@ -765,7 +772,17 @@ After TRADE_3 you may add a brief analysis paragraph.`;
                             background: isSelected ? "var(--accent-light)" : "var(--surface)",
                             cursor: "pointer", transition: "all 0.15s",
                           }}>
-                          <div style={{ fontWeight: isSelected ? 700 : 500, fontSize: 13 }}>{p.name}</div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ fontWeight: isSelected ? 700 : 500, fontSize: 13 }}>{p.name}</div>
+                            {mv ? (
+                              <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
+                                color: mv.value >= 80 ? "var(--green)" : mv.value >= 60 ? "var(--accent-dim)" : "var(--text-muted)" }}>
+                                {mv.value}/100
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: 10, color: "var(--text-muted)", fontStyle: "italic" }}>no value</span>
+                            )}
+                          </div>
                           {s && (
                             <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
                               {s.pts}pts · {s.reb}reb · {s.ast}ast · {s.stl}stl · {s.blk}blk · Age {s.age}
@@ -779,24 +796,56 @@ After TRADE_3 you may add a brief analysis paragraph.`;
               );
             })()}
 
-            {/* Step 3: Get offer packages */}
-            {targetPlayer && (
-              <div className="flex-col gap-3">
-                <div className="input-group">
-                  <label className="label">Additional Context (optional)</label>
-                  <textarea className="textarea" rows={3}
-                    placeholder="Add your intel on this player and manager..."
-                    value={suggestContext} onChange={e => setSuggestContext(e.target.value)} />
+            {/* Step 3: Context + Build */}
+            {targetPlayer && (() => {
+              const mv = marketValues.find(m => m.name.toLowerCase() === targetPlayer.name.toLowerCase());
+              const notInDB = !mv;
+              return (
+                <div className="flex-col gap-3">
+                  {notInDB ? (
+                    <div style={{ padding: 16, borderRadius: "var(--radius-lg)", background: "var(--red-bg)",
+                      border: "1px solid var(--red)", fontSize: 13 }}>
+                      <div style={{ fontWeight: 700, color: "var(--red)", marginBottom: 4 }}>⚠ No Market Value Found</div>
+                      <div style={{ color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                        {targetPlayer.name} is not in your Market Value Database. Add them first so the Offer Builder has grounded values to work with — otherwise it will hallucinate.
+                      </div>
+                      <button className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: "var(--red)" }}
+                        onClick={() => setShowMarketValues(true)}>
+                        Open Market Values →
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ padding: 12, borderRadius: "var(--radius-lg)", background: "var(--surface-2)",
+                        border: "1px solid var(--border)", fontSize: 13 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontWeight: 600 }}>{targetPlayer.name}</span>
+                          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{mv.value}/100</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>{mv.summary}</div>
+                        <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ width: `${mv.value}%`, height: "100%", borderRadius: 3,
+                            background: mv.value >= 80 ? "var(--green)" : mv.value >= 60 ? "var(--accent)" : "var(--red)" }} />
+                        </div>
+                      </div>
+                      <div className="input-group">
+                        <label className="label">Additional Context</label>
+                        <textarea className="textarea" rows={2}
+                          placeholder="Your intel on this player and manager..."
+                          value={suggestContext} onChange={e => setSuggestContext(e.target.value)} />
+                      </div>
+                      <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
+                        onClick={getSuggestions} disabled={suggestLoading}>
+                        {suggestLoading
+                          ? <><span className="spinner" /> Building packages...</>
+                          : <><Zap size={15} /> Build Offer Packages</>
+                        }
+                      </button>
+                    </>
+                  )}
                 </div>
-                <button className="btn btn-accent w-full" style={{ height: 44, fontSize: 15 }}
-                  onClick={getSuggestions} disabled={suggestLoading}>
-                  {suggestLoading
-                    ? <><span className="spinner" /> Researching trade packages...</>
-                    : <><Zap size={15} /> Build Offer Packages</>
-                  }
-                </button>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* RIGHT PANEL */}
@@ -805,63 +854,103 @@ After TRADE_3 you may add a brief analysis paragraph.`;
               <div className="card">
                 <div className="card-body" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
                   <div className="spinner" style={{ margin: "0 auto 16px", width: 32, height: 32 }} />
-                  <div className="font-semibold" style={{ fontSize: 14 }}>Researching {targetPlayer?.name}...</div>
-                  <div className="text-sm mt-2">Checking startup pick, 2026-27 outlook, team needs</div>
+                  <div className="font-semibold" style={{ fontSize: 14 }}>Building packages for {targetPlayer?.name}...</div>
+                  <div className="text-sm mt-2">Matching values, checking trade block, analysing team needs</div>
                 </div>
               </div>
             )}
             {!suggestLoading && suggestions ? (
               <div className="flex-col gap-3">
-                {parseSuggestions(suggestions).length > 0 ? parseSuggestions(suggestions).map(trade => (
-                  <div key={trade.id} className="card">
-                    <div className="card-header">
-                      <div>
-                        <span className="card-title">Package {trade.id}</span>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                          Targeting {targetPlayer?.name}
+                {(() => {
+                  const mv = marketValues.find(m => m.name.toLowerCase() === targetPlayer?.name?.toLowerCase());
+                  const myValues = marketValues.filter(m => m.category === "My Roster");
+                  return parseSuggestions(suggestions).map(trade => {
+                    // Calculate value gap
+                    const giveNames = trade.give.split(/[,+]/).map(s => s.trim());
+                    const giveTotal = giveNames.reduce((sum, name) => {
+                      const m = myValues.find(v => name.toLowerCase().includes(v.name.toLowerCase()));
+                      return sum + (m?.value || 0);
+                    }, 0);
+                    const targetVal = mv?.value || 0;
+                    const gap = targetVal - giveTotal;
+                    const gapPct = targetVal > 0 ? Math.round((giveTotal / targetVal) * 100) : 0;
+                    const isStarConsolidation = giveNames.length >= 2 && giveTotal >= targetVal * 0.8;
+                    return (
+                      <div key={trade.id} className="card">
+                        <div className="card-header">
+                          <div>
+                            <span className="card-title">
+                              {trade.id === 1 ? "🔵 Opening Anchor" : trade.id === 2 ? "🟡 Fair Value" : "🔴 Walk-Away Max"}
+                            </span>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                              Targeting {targetPlayer?.name}
+                            </div>
+                          </div>
+                          <span style={{
+                            marginLeft: "auto", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+                            background: trade.confidence === "High" ? "var(--green-bg)" : trade.confidence === "Low" ? "var(--red-bg)" : "var(--accent-light)",
+                            color: trade.confidence === "High" ? "var(--green)" : trade.confidence === "Low" ? "var(--red)" : "var(--accent-dim)",
+                          }}>{trade.confidence} Confidence</span>
+                        </div>
+
+                        {/* Value Gap Meter */}
+                        {targetVal > 0 && giveTotal > 0 && (
+                          <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                              <span style={{ color: "var(--text-muted)" }}>Value match</span>
+                              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700,
+                                color: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent-dim)" : "var(--red)" }}>
+                                {gapPct}% ({giveTotal} vs {targetVal})
+                              </span>
+                            </div>
+                            <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
+                              <div style={{ width: `${Math.min(gapPct, 100)}%`, height: "100%", borderRadius: 3,
+                                background: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent)" : "var(--red)",
+                                transition: "width 0.4s" }} />
+                            </div>
+                            {isStarConsolidation && (
+                              <div style={{ marginTop: 6, fontSize: 11, color: "var(--green)", fontWeight: 600 }}>
+                                ⭐ Star consolidation — trading quantity for quality, which typically favours you long-term
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, borderBottom: "1px solid var(--border)" }}>
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>I Give</div>
+                            <div style={{ fontSize: 13 }}>{trade.give}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>I Receive</div>
+                            <div style={{ fontSize: 13 }}>{trade.receive}</div>
+                          </div>
+                        </div>
+                        <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+                          {trade.whyAccept && (
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Why They Accept</div>
+                              <div style={{ fontSize: 13, lineHeight: 1.6 }}>{trade.whyAccept}</div>
+                            </div>
+                          )}
+                          {trade.whyWin && (
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Why I Win</div>
+                              <div style={{ fontSize: 13, lineHeight: 1.6 }}>{trade.whyWin}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <span style={{
-                        marginLeft: "auto", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-                        background: trade.confidence === "High" ? "var(--green-bg)" : trade.confidence === "Low" ? "var(--red-bg)" : "var(--accent-light)",
-                        color: trade.confidence === "High" ? "var(--green)" : trade.confidence === "Low" ? "var(--red)" : "var(--accent-dim)",
-                      }}>{trade.confidence} Confidence</span>
-                    </div>
-                    <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, borderBottom: "1px solid var(--border)" }}>
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>I Give</div>
-                        <div style={{ fontSize: 13 }}>{trade.give}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>I Receive</div>
-                        <div style={{ fontSize: 13 }}>{trade.receive}</div>
-                      </div>
-                    </div>
-                    <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-                      {trade.whyAccept && (
-                        <div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Why They Accept</div>
-                          <div style={{ fontSize: 13, lineHeight: 1.6 }}>{trade.whyAccept}</div>
-                        </div>
-                      )}
-                      {trade.whyWin && (
-                        <div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Why I Win</div>
-                          <div style={{ fontSize: 13, lineHeight: 1.6 }}>{trade.whyWin}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )) : (
-                  <div className="card"><div className="card-body"><div className="ai-box">{suggestions}</div></div></div>
-                )}
+                    );
+                  });
+                })()}
               </div>
             ) : !suggestLoading && (
               <div className="card">
                 <div className="card-body" style={{ textAlign: "center", padding: "80px 20px", color: "var(--text-muted)" }}>
                   <Zap size={40} style={{ margin: "0 auto 16px", opacity: 0.15 }} />
-                  <div className="font-semibold" style={{ fontSize: 15 }}>Target a player to get started</div>
-                  <div className="text-sm mt-2">Select a team, pick the player you want, then build offer packages</div>
+                  <div className="font-semibold" style={{ fontSize: 15 }}>Offer Builder</div>
+                  <div className="text-sm mt-2">Pick a team, select your target, get 3 grounded offer packages</div>
                 </div>
               </div>
             )}
