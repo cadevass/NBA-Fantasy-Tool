@@ -112,7 +112,19 @@ export default function Dashboard() {
       }
     }
     fetchSchedule();
-  }, [myTeam, nbaPlayers]);
+  }, [myTeam]);
+
+  // Recalculate seasonAvgFP when nbaPlayers loads
+  useEffect(() => {
+    if (!nbaPlayers.length || !activePlayers.length) return;
+    setActivePlayers(prev => prev.map(p => ({
+      ...p,
+      seasonAvgFP: (() => {
+        const s = findPlayer(nbaPlayers, p.name);
+        return s ? calcSeasonAverageFP(s) : null;
+      })(),
+    })));
+  }, [nbaPlayers]);
 
   async function runStartSit() {
     if (!playerA || !playerB || playerA === playerB) return;
