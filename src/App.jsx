@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Dashboard from "./pages/Dashboard";
 import BigBoard from "./pages/BigBoard";
 import TradeFinder from "./pages/TradeFinder";
 import LockInAdvisor from "./pages/LockInAdvisor";
@@ -7,6 +8,7 @@ import DraftNight from "./pages/DraftNight";
 import RosterPanel from "./components/RosterPanel";
 
 const TABS = [
+  { id: "dashboard", label: "🏠" },
   { id: "bigboard", label: "Big Board" },
   { id: "trade", label: "Trade Evaluator" },
   { id: "lockin", label: "Lock-In Advisor" },
@@ -17,7 +19,7 @@ const TABS = [
 const NOW = new Date().toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" });
 
 export default function App() {
-  const [tab, setTab] = useState("bigboard");
+  const [tab, setTab] = useState("dashboard");
 
   return (
     <div className="app-shell">
@@ -43,6 +45,7 @@ export default function App() {
       </header>
 
       <main className="main-content">
+        {tab === "dashboard" && <Dashboard />}
         {tab === "bigboard" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 20, alignItems: "start" }}>
             <BigBoard />
