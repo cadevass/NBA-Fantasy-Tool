@@ -7,7 +7,7 @@ import { DYNASTY_CONTEXT } from "../utils/league";
 import { useSleeperContext } from "../context/SleeperContext";
 import { MY_PICKS, getPickValue, getAgeCurveMultiplier, getWindowAlignment } from "../utils/pickValues";
 import { getTeamContexts, setTeamContext, getTeamContext, TEAM_STATUSES } from "../utils/teamContext";
-import { getNegotiationLog, saveNegotiationLog, INTERACTION_TYPES, getInteractionColor, getInteractionBg } from "../utils/negotiationLog";
+import { getNegotiationLog, saveNegotiationLog, INTERACTION_TYPES, getInteractionColor, getInteractionBg, getAiProfiles, saveAiProfiles } from "../utils/negotiationLog";
 import { dbSet, dbGet } from "../utils/supabase";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import MarketValueModal from "../components/MarketValueModal";
@@ -249,7 +249,10 @@ export default function TradeFinder() {
   useEffect(() => { getMarketValues().then(setMarketValues); }, []);
   const [showMarketValues, setShowMarketValues] = useState(false);
   const [negLog, setNegLog] = useState([]);
+  const [aiProfiles, setAiProfiles] = useState({});
+  const [generatingProfile, setGeneratingProfile] = useState(null);
   const [selectedTeamProfile, setSelectedTeamProfile] = useState(null);
+  useEffect(() => { getAiProfiles().then(setAiProfiles); }, []);
   const [newInteraction, setNewInteraction] = useState({ type: "offer_sent", iGive: "", iReceive: "", notes: "", date: new Date().toISOString().split("T")[0] });
   useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
   const [suggestLoading, setSuggestLoading] = useState(false);
@@ -276,6 +279,50 @@ export default function TradeFinder() {
   }, []);
 
   function getStats(name) { return findPlayer(nbaPlayers, name); }
+
+  async function generateProfile(rosterId) {
+    const team = otherTeams.find(t => t.rosterId === rosterId);
+    const ctx = getTeamContext(rosterId);
+    const teamNeg = negLog.filter(n => n.rosterId === rosterId);
+    if (!teamNeg.length) return;
+    setGeneratingProfile(rosterId);
+    try {
+      const negLines = teamNeg.map(n => {
+        const typeLabel = INTERACTION_TYPES.find(t => t.value === n.type)?.label || n.type;
+        const parts = [`[${n.date}] ${typeLabel}`];
+        if (n.iGive) parts.push(`I offered: ${n.iGive}`);
+        if (n.iReceive) parts.push(`For: ${n.iReceive}`);
+        if (n.notes) parts.push(n.notes);
+        return parts.join(" | ");
+      }).join("\n");
+
+      const prompt = `Generate a concise dynasty fantasy basketball negotiation profile for this manager based on their interaction history.
+
+MANAGER: ${team?.teamName || team?.username}
+STATUS: ${ctx.status || "unknown"}
+SCOUTING NOTES: ${ctx.notes || "none"}
+
+INTERACTION HISTORY:
+${negLines}
+
+Write a 3-5 sentence behavioural profile covering:
+1. How they negotiate (fast/slow, direct/coy, firm/flexible)
+2. What they value (proven players vs picks vs youth)
+3. How to approach them (lead with what, avoid what)
+4. Overall assessment of how easy/hard they are to deal with
+
+Be specific to the interactions above. No generic advice. Dynasty fantasy context only.`;
+
+      const profile = await callClaude([{ role: "user", content: prompt }]);
+      const updated = { ...aiProfiles, [rosterId]: profile };
+      setAiProfiles(updated);
+      await saveAiProfiles(updated);
+    } catch (e) {
+      console.error("Profile generation failed:", e);
+    } finally {
+      setGeneratingProfile(null);
+    }
+  }
 
   async function addInteraction(rosterId) {
     if (!newInteraction.notes && !newInteraction.iGive && !newInteraction.iReceive) return;
@@ -334,6 +381,7 @@ export default function TradeFinder() {
         teams,
         targetRosterId: selectedTeam?.rosterId || null,
         pageContext: { additionalContext: otherContext },
+        aiProfiles,
       });
 
       const prompt = `Evaluate this dynasty fantasy basketball trade. Search the web for any current player news or injuries.
@@ -459,6 +507,7 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
         teams,
         targetRosterId: targetTeam?.rosterId || null,
         pageContext: { additionalContext: suggestContext },
+        aiProfiles,
       });
 
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
@@ -764,6 +813,12 @@ TRADE_3:
                     {getTeamContext(otherTeams.find(t => t.rosterId === suggestTeamId)?.rosterId)?.notes}
                   </div>
                 )}
+                {suggestTeamId && aiProfiles[suggestTeamId] && (
+                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, fontSize: 11,
+                    color: "var(--green)", fontWeight: 600 }}>
+                    <span>📋</span> AI profile active — negotiation intel loaded
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1066,13 +1121,23 @@ TRADE_3:
                         onChange={e => updateTeamCtx(selectedTeamProfile, "notes", e.target.value)} />
                     </div>
                     {teamNeg.length > 0 && (
-                      <div style={{ marginTop: 12, padding: 10, background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 12 }}>
-                        <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>AI Pattern</div>
-                        <div style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                          {teamNeg.filter(n => n.type === "declined").length} declined · {teamNeg.filter(n => n.type === "accepted" || n.type === "completed").length} accepted · {teamNeg.filter(n => n.type === "countered").length} countered
-                          {teamNeg.filter(n => n.type === "declined").length >= 2 && " · Tends to decline — raise your offers"}
-                          {teamNeg.filter(n => n.type === "accepted").length >= 2 && " · Tends to accept — push harder"}
+                      <div style={{ marginTop: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>AI Behavioural Profile</span>
+                          <button className="btn btn-ghost btn-xs" onClick={() => generateProfile(selectedTeamProfile)}
+                            disabled={generatingProfile === selectedTeamProfile}>
+                            {generatingProfile === selectedTeamProfile ? <><span className="spinner" /> Generating...</> : aiProfiles[selectedTeamProfile] ? "↻ Refresh" : "✦ Generate"}
+                          </button>
                         </div>
+                        {aiProfiles[selectedTeamProfile] ? (
+                          <div style={{ padding: 10, background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 12, lineHeight: 1.6, color: "var(--text-secondary)" }}>
+                            {aiProfiles[selectedTeamProfile]}
+                          </div>
+                        ) : (
+                          <div style={{ padding: 10, background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+                            Click Generate to create an AI profile from your negotiation history
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -51,3 +51,20 @@ export function getInteractionBg(type) {
   if (type === "countered") return "var(--accent-light)";
   return "var(--surface-2)";
 }
+
+const PROFILES_KEY = "ai_profiles";
+
+export async function getAiProfiles() {
+  try {
+    const local = localStorage.getItem(PROFILES_KEY);
+    return local ? JSON.parse(local) : {};
+  } catch { return {}; }
+}
+
+export async function saveAiProfiles(profiles) {
+  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  try {
+    const { dbSet } = await import("./supabase");
+    await dbSet("app_settings", PROFILES_KEY, profiles);
+  } catch {}
+}

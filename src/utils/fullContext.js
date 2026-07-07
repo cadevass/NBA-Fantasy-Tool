@@ -14,6 +14,7 @@ export function buildFullContext({
   teams = [],
   targetRosterId = null,
   pageContext = {},
+  aiProfiles = {},
 }) {
   const sections = [];
 
