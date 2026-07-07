@@ -420,26 +420,26 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
       const startupPickStr = targetStartupPick
         ? `Drafted at Pick ${targetStartupPick.pickNo} (Round ${targetStartupPick.round}) in the startup — this indicates their attachment level`
         : "Startup pick position unknown";
-
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
 
-STEP 1 — Search the web for:
-1. ${targetPlayer.name} current dynasty trade value, 2026-27 season outlook, and how the dynasty community values him RIGHT NOW
-2. ${targetTeam?.teamName || targetTeam?.username}'s roster construction, needs, and weaknesses heading into 2026-27
-
-STEP 2 — Based on your research, determine ${targetPlayer.name}'s TRUE dynasty market value. Be honest — if he is elite, say so. Do not undersell him.
-
-STEP 3 — Look at MY FULL ROSTER below and determine what assets from my team would match ${targetPlayer.name}'s TRUE value. Do not restrict yourself to obvious sell candidates — if ${targetPlayer.name} is worth a franchise piece, the packages should include franchise pieces. Work out what it actually costs and build packages accordingly.
-
-STEP 4 — Build 3 packages from cheapest to most aggressive. All 3 should be realistic offers that Butler would genuinely consider — not lowballs, not pipe dreams.
-
-TARGET: ${targetPlayerStr}
-FROM: ${targetTeam?.teamName || targetTeam?.username} (Status: ${targetTeamCtx?.status || "unknown"})
-NOTES ON THEM: ${targetTeamCtx?.notes || "none"}
+TARGET PLAYER: ${targetPlayerStr}
+OWNER: ${targetTeam?.teamName || targetTeam?.username} (Status: ${targetTeamCtx?.status || "unknown"})
+OWNER NOTES: ${targetTeamCtx?.notes || "none"}
 STARTUP DRAFT: ${startupPickStr}
-ADDITIONAL CONTEXT: ${suggestContext || "none"}
 
-MY FULL ROSTER (every player available to include in offers):
+CRITICAL CONTEXT — READ THIS FIRST BEFORE BUILDING ANY PACKAGES:
+${suggestContext || "none"}
+
+If the context mentions a previously declined offer, use it as your calibration baseline:
+- TRADE_1 (Opening Anchor) must be ABOVE the declined offer — never offer less than what was already rejected
+- TRADE_2 (Fair Value) must be meaningfully better than the declined offer  
+- TRADE_3 (Walk-Away Max) is the absolute ceiling — if rejected, walk away
+
+STEP 1 — Search the web for ${targetPlayer.name}'s current dynasty value, 2026-27 outlook, and ${targetTeam?.teamName || targetTeam?.username}'s roster needs.
+STEP 2 — Determine ${targetPlayer.name}'s TRUE market value from your research.
+STEP 3 — Using the declined offer as your floor (if mentioned), build 3 escalating packages. Do not lowball.
+
+MY FULL ROSTER:
 ${myRosterStr}
 
 MY DRAFT CAPITAL: ${myPicks}
@@ -868,27 +868,21 @@ TRADE_3:
                     // Calculate value gap
                     const giveNames = trade.give.split(/[,+]/).map(s => s.trim());
                     const normalise = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
-                    const giveTotal = giveNames.reduce((sum, name) => {
-                      // Match player names ignoring apostrophes/special chars
+                    // Only use player values for gap % (picks shown separately)
+                    const matchedPlayers = giveNames.reduce((acc, name) => {
                       const normName = normalise(name);
                       const m = myValues.find(v => {
                         const normV = normalise(v.name);
                         return normName.includes(normV) || normV.includes(normName);
                       });
-                      if (m) return sum + m.value;
-                      // Match pick values from pickValues
-                      const pickMatch = name.match(/(\d{4})\s+(1st|2nd|3rd)/i);
-                      if (pickMatch) {
-                        const pickLabel = `${pickMatch[1]} ${pickMatch[2]}`;
-                        const pv = getPickValue(pickLabel, "giving");
-                        return sum + (pv || 0);
-                      }
-                      return sum;
-                    }, 0);
+                      if (m) acc.push(m.value);
+                      return acc;
+                    }, []);
+                    const pickCount = giveNames.filter(n => /(\d{4})\s+(1st|2nd|3rd)/i.test(n)).length;
+                    const giveTotal = matchedPlayers.reduce((s, v) => s + v, 0);
                     const targetVal = mv?.value || 0;
-                    const gap = targetVal - giveTotal;
-                    const gapPct = targetVal > 0 ? Math.round((giveTotal / targetVal) * 100) : 0;
-                    const isStarConsolidation = giveNames.length >= 2 && giveTotal >= targetVal * 0.8;
+                    const gapPct = targetVal > 0 && giveTotal > 0 ? Math.round((giveTotal / targetVal) * 100) : 0;
+                    const isStarConsolidation = matchedPlayers.length >= 2 && giveTotal >= targetVal * 0.7;
                     return (
                       <div key={trade.id} className="card">
                         <div className="card-header">
@@ -908,20 +902,23 @@ TRADE_3:
                         </div>
 
                         {/* Value Gap Meter */}
-                        {targetVal > 0 && giveTotal > 0 && (
+                        {targetVal > 0 && (
                           <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-                              <span style={{ color: "var(--text-muted)" }}>Value match</span>
+                              <span style={{ color: "var(--text-muted)" }}>Player value match</span>
                               <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700,
-                                color: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent-dim)" : "var(--red)" }}>
-                                {gapPct}% ({giveTotal} vs {targetVal})
+                                color: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent-dim)" : "var(--text-muted)" }}>
+                                {gapPct > 0 ? `${gapPct}%` : "Players not in DB"}
+                                {pickCount > 0 ? ` + ${pickCount} pick${pickCount > 1 ? "s" : ""}` : ""}
                               </span>
                             </div>
-                            <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
-                              <div style={{ width: `${Math.min(gapPct, 100)}%`, height: "100%", borderRadius: 3,
-                                background: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent)" : "var(--red)",
-                                transition: "width 0.4s" }} />
-                            </div>
+                            {gapPct > 0 && (
+                              <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
+                                <div style={{ width: `${Math.min(gapPct, 100)}%`, height: "100%", borderRadius: 3,
+                                  background: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent)" : "var(--red)",
+                                  transition: "width 0.4s" }} />
+                              </div>
+                            )}
                             {isStarConsolidation && (
                               <div style={{ marginTop: 6, fontSize: 11, color: "var(--green)", fontWeight: 600 }}>
                                 ⭐ Star consolidation — trading quantity for quality, which typically favours you long-term
