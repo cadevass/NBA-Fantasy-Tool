@@ -891,9 +891,7 @@ TRADE_3:
                     const pickCount = giveNames.filter(n => /(\d{4})\s+(1st|2nd|3rd)/i.test(n)).length;
                     const giveTotal = matchedPlayers.reduce((s, v) => s + v, 0);
                     const targetVal = mv?.value || 0;
-                    const rawPct = targetVal > 0 && giveTotal > 0 ? Math.round((giveTotal / targetVal) * 100) : 0;
-                    const gapPct = Math.min(rawPct, 100);
-                    const overpaying = rawPct > 105;
+
                     const isStarConsolidation = matchedPlayers.length >= 2 && giveTotal >= targetVal * 0.7;
                     return (
                       <div key={trade.id} className="card">
@@ -914,25 +912,33 @@ TRADE_3:
                         </div>
 
                         {/* Value Gap Meter */}
-                        {targetVal > 0 && (
+                        {targetVal > 0 && giveTotal > 0 && (
                           <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-                              <span style={{ color: "var(--text-muted)" }}>Player value match</span>
-                              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700,
-                                color: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent-dim)" : "var(--text-muted)" }}>
-                                {gapPct > 0 ? (overpaying ? `Overpaying (${rawPct}%)` : `${gapPct}%`) : "Players not in DB"}
-                                {pickCount > 0 ? ` + ${pickCount} pick${pickCount > 1 ? "s" : ""}` : ""}
-                              </span>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Value comparison (players only)</span>
+                              {pickCount > 0 && <span style={{ fontSize: 10, color: "var(--text-muted)", fontStyle: "italic" }}>+ {pickCount} pick{pickCount > 1 ? "s" : ""} not shown</span>}
                             </div>
-                            {gapPct > 0 && (
-                              <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
-                                <div style={{ width: `${Math.min(gapPct, 100)}%`, height: "100%", borderRadius: 3,
-                                  background: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent)" : "var(--red)",
-                                  transition: "width 0.4s" }} />
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center" }}>
+                              <div style={{ textAlign: "center", padding: "8px", background: "var(--red-bg)", borderRadius: "var(--radius)" }}>
+                                <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 20, color: "var(--red)" }}>{giveTotal}</div>
+                                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>YOU GIVE</div>
                               </div>
-                            )}
+                              <div style={{ textAlign: "center" }}>
+                                {giveTotal > targetVal ? (
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--red)" }}>▲ {giveTotal - targetVal} over</div>
+                                ) : giveTotal < targetVal ? (
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-dim)" }}>▼ {targetVal - giveTotal} under</div>
+                                ) : (
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--green)" }}>= Even</div>
+                                )}
+                              </div>
+                              <div style={{ textAlign: "center", padding: "8px", background: "var(--green-bg)", borderRadius: "var(--radius)" }}>
+                                <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 20, color: "var(--green)" }}>{targetVal}</div>
+                                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>YOU GET</div>
+                              </div>
+                            </div>
                             {isStarConsolidation && (
-                              <div style={{ marginTop: 6, fontSize: 11, color: "var(--green)", fontWeight: 600 }}>
+                              <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 600 }}>
                                 ⭐ Star consolidation — trading quantity for quality, which typically favours you long-term
                               </div>
                             )}
