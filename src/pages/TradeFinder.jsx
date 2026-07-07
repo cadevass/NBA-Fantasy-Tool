@@ -867,9 +867,23 @@ TRADE_3:
                   return parseSuggestions(suggestions).map(trade => {
                     // Calculate value gap
                     const giveNames = trade.give.split(/[,+]/).map(s => s.trim());
+                    const normalise = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
                     const giveTotal = giveNames.reduce((sum, name) => {
-                      const m = myValues.find(v => name.toLowerCase().includes(v.name.toLowerCase()));
-                      return sum + (m?.value || 0);
+                      // Match player names ignoring apostrophes/special chars
+                      const normName = normalise(name);
+                      const m = myValues.find(v => {
+                        const normV = normalise(v.name);
+                        return normName.includes(normV) || normV.includes(normName);
+                      });
+                      if (m) return sum + m.value;
+                      // Match pick values from pickValues
+                      const pickMatch = name.match(/(\d{4})\s+(1st|2nd|3rd)/i);
+                      if (pickMatch) {
+                        const pickLabel = `${pickMatch[1]} ${pickMatch[2]}`;
+                        const pv = getPickValue(pickLabel, "giving");
+                        return sum + (pv || 0);
+                      }
+                      return sum;
                     }, 0);
                     const targetVal = mv?.value || 0;
                     const gap = targetVal - giveTotal;
