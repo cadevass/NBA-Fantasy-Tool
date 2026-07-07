@@ -25,6 +25,11 @@ export default function MarketValueModal({ onClose }) {
   const [addForm, setAddForm] = useState({ ...EMPTY });
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [modalTab, setModalTab] = useState("values");
+  const [tradeBlock, setTradeBlock] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("trade_block") || "[]"); } catch { return []; }
+  });
+  const [newBlockPlayer, setNewBlockPlayer] = useState({ name: "", team: "", available: true, owner: "My Roster", notes: "" });
 
   useEffect(() => {
     getMarketValues().then(data => {
@@ -75,15 +80,21 @@ export default function MarketValueModal({ onClose }) {
         
         {/* Header */}
         <div className="card-header" style={{ flexShrink: 0 }}>
-          <span className="card-title">Market Value Database</span>
+          <div className="flex gap-2">
+            <button className={`tab-btn${modalTab === "values" ? " active" : ""}`} onClick={() => setModalTab("values")}>Market Values</button>
+            <button className={`tab-btn${modalTab === "block" ? " active" : ""}`} onClick={() => setModalTab("block")}>Trade Block</button>
+          </div>
           <div className="flex gap-2 items-center" style={{ marginLeft: "auto" }}>
-            <button className="btn btn-accent btn-sm" onClick={() => { setAdding(true); setEditForm({ ...EMPTY }); }}>
-              <Plus size={13} /> Add Player
-            </button>
+            {modalTab === "values" && (
+              <button className="btn btn-accent btn-sm" onClick={() => { setAdding(true); setEditForm({ ...EMPTY }); }}>
+                <Plus size={13} /> Add Player
+              </button>
+            )}
             <button className="btn btn-ghost btn-xs" onClick={onClose}><X size={14} /></button>
           </div>
         </div>
 
+        {modalTab === "values" && <>
         {/* Filters */}
         <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 8, flexShrink: 0 }}>
           <input className="input" placeholder="Search..." value={search}
@@ -180,6 +191,92 @@ export default function MarketValueModal({ onClose }) {
             </div>
           ))}
         </div>
+        </>}
+
+        {/* Trade Block Tab */}
+        {modalTab === "block" && (
+          <div style={{ overflowY: "auto", flex: 1 }}>
+            {/* Add to block */}
+            <div style={{ padding: "16px", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Add Player to Trade Block</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 120px", gap: 8, marginBottom: 8 }}>
+                <input className="input" placeholder="Player name" value={newBlockPlayer.name}
+                  onChange={e => setNewBlockPlayer(p => ({ ...p, name: e.target.value }))} style={{ fontSize: 13 }} />
+                <input className="input" placeholder="Team" value={newBlockPlayer.team}
+                  onChange={e => setNewBlockPlayer(p => ({ ...p, team: e.target.value }))} style={{ fontSize: 13 }} />
+                <select className="select" value={newBlockPlayer.owner}
+                  onChange={e => setNewBlockPlayer(p => ({ ...p, owner: e.target.value }))} style={{ fontSize: 13 }}>
+                  <option>My Roster</option>
+                  <option>League Player</option>
+                </select>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input className="input" placeholder="Notes (e.g. wants picks, rebuilding)" value={newBlockPlayer.notes}
+                  onChange={e => setNewBlockPlayer(p => ({ ...p, notes: e.target.value }))} style={{ fontSize: 13, flex: 1 }} />
+                <button className="btn btn-accent btn-sm" onClick={() => {
+                  if (!newBlockPlayer.name) return;
+                  const updated = [...tradeBlock, { ...newBlockPlayer, id: Date.now() }];
+                  setTradeBlock(updated);
+                  localStorage.setItem("trade_block", JSON.stringify(updated));
+                  setNewBlockPlayer({ name: "", team: "", available: true, owner: "My Roster", notes: "" });
+                }}>Add</button>
+              </div>
+            </div>
+
+            {/* My players on block */}
+            {tradeBlock.filter(p => p.owner === "My Roster").length > 0 && (
+              <div>
+                <div style={{ padding: "10px 16px", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
+                  My Players Available
+                </div>
+                {tradeBlock.filter(p => p.owner === "My Roster").map(p => (
+                  <div key={p.id} style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.team}{p.notes && ` · ${p.notes}`}</div>
+                    </div>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "var(--green-bg)", color: "var(--green)", fontWeight: 700 }}>Available</span>
+                    <button className="btn btn-ghost btn-xs" style={{ color: "var(--red)" }} onClick={() => {
+                      const updated = tradeBlock.filter(x => x.id !== p.id);
+                      setTradeBlock(updated);
+                      localStorage.setItem("trade_block", JSON.stringify(updated));
+                    }}><X size={11} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* League players on block */}
+            {tradeBlock.filter(p => p.owner === "League Player").length > 0 && (
+              <div>
+                <div style={{ padding: "10px 16px", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
+                  League Trade Block
+                </div>
+                {tradeBlock.filter(p => p.owner === "League Player").map(p => (
+                  <div key={p.id} style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.team}{p.notes && ` · ${p.notes}`}</div>
+                    </div>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "var(--accent-light)", color: "var(--accent-dim)", fontWeight: 700 }}>On Block</span>
+                    <button className="btn btn-ghost btn-xs" style={{ color: "var(--red)" }} onClick={() => {
+                      const updated = tradeBlock.filter(x => x.id !== p.id);
+                      setTradeBlock(updated);
+                      localStorage.setItem("trade_block", JSON.stringify(updated));
+                    }}><X size={11} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tradeBlock.length === 0 && (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>No players on the block</div>
+                <div style={{ fontSize: 12 }}>Add your available players and scan Sleeper's trade block to populate this</div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
