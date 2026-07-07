@@ -92,6 +92,18 @@ export default function Dashboard() {
             })() : null,
           }));
 
+        // MOCK DATA for offseason testing — remove when season starts
+        if (active.length === 0 && allPlayers.length > 0) {
+          const mockOpponents = ["BOS","WAS","LAL","DEN","MIA"];
+          active = allPlayers.slice(0, 5).map((p, i) => ({
+            ...p,
+            game: { opponent: mockOpponents[i % mockOpponents.length], time: "7:30 PM", status: "MOCK" },
+            seasonAvgFP: nbaPlayers.length ? (() => {
+              const s = findPlayer(nbaPlayers, p.name);
+              return s ? calcSeasonAverageFP(s) : null;
+            })() : null,
+          }));
+        }
         setActivePlayers(active);
       } catch (e) {
         console.error("Schedule fetch error:", e);
