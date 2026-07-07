@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSleeperContext } from "../context/SleeperContext";
 import { X, Plus, Edit2, Save, Trash2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { getMarketValues, saveMarketValues, TRENDS, CATEGORIES, getTrendColor, getTrendBg, getTrendIcon, getValueColor } from "../utils/marketValues";
 
@@ -17,6 +18,8 @@ function ValueBar({ value }) {
 }
 
 export default function MarketValueModal({ onClose }) {
+  const { myTeam, teams } = useSleeperContext();
+  const myRosterPlayers = myTeam ? [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])] : [];
   const [values, setValues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -198,27 +201,46 @@ export default function MarketValueModal({ onClose }) {
           <div style={{ overflowY: "auto", flex: 1 }}>
             {/* Add to block */}
             <div style={{ padding: "16px", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Add Player to Trade Block</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 120px", gap: 8, marginBottom: 8 }}>
-                <input className="input" placeholder="Player name" value={newBlockPlayer.name}
-                  onChange={e => setNewBlockPlayer(p => ({ ...p, name: e.target.value }))} style={{ fontSize: 13 }} />
-                <input className="input" placeholder="Team" value={newBlockPlayer.team}
-                  onChange={e => setNewBlockPlayer(p => ({ ...p, team: e.target.value }))} style={{ fontSize: 13 }} />
-                <select className="select" value={newBlockPlayer.owner}
-                  onChange={e => setNewBlockPlayer(p => ({ ...p, owner: e.target.value }))} style={{ fontSize: 13 }}>
-                  <option>My Roster</option>
-                  <option>League Player</option>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>Add to Trade Block</span>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)", marginLeft: "auto", cursor: "pointer" }}>
+                  <input type="checkbox" checked={newBlockPlayer.isMyPlayer}
+                    onChange={e => setNewBlockPlayer(p => ({ ...p, isMyPlayer: e.target.checked, name: "", team: "" }))} />
+                  My player
+                </label>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 8, marginBottom: 8 }}>
+                {newBlockPlayer.isMyPlayer ? (
+                  <select className="select" value={newBlockPlayer.name}
+                    onChange={e => {
+                      const p = myRosterPlayers.find(x => x.name === e.target.value);
+                      setNewBlockPlayer(prev => ({ ...prev, name: e.target.value, team: p?.team || "" }));
+                    }} style={{ fontSize: 13 }}>
+                    <option value="">Select from my roster...</option>
+                    {myRosterPlayers.map(p => <option key={p.name} value={p.name}>{p.name} ({p.team})</option>)}
+                  </select>
+                ) : (
+                  <input className="input" placeholder="Player name" value={newBlockPlayer.name}
+                    onChange={e => setNewBlockPlayer(p => ({ ...p, name: e.target.value }))} style={{ fontSize: 13 }} />
+                )}
+                <select className="select" value={newBlockPlayer.team}
+                  onChange={e => setNewBlockPlayer(p => ({ ...p, team: e.target.value }))} style={{ fontSize: 13 }}
+                  disabled={newBlockPlayer.isMyPlayer}>
+                  <option value="">Team...</option>
+                  {["ATL","BOS","BKN","CHA","CHI","CLE","DAL","DEN","DET","GSW","HOU","IND","LAC","LAL","MEM","MIA","MIL","MIN","NOP","NYK","OKC","ORL","PHI","PHX","POR","SAC","SAS","TOR","UTA","WAS"].map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
                 </select>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <input className="input" placeholder="Notes (e.g. wants picks, rebuilding)" value={newBlockPlayer.notes}
+                <input className="input" placeholder="Notes (e.g. owner wants picks, rebuilding)" value={newBlockPlayer.notes}
                   onChange={e => setNewBlockPlayer(p => ({ ...p, notes: e.target.value }))} style={{ fontSize: 13, flex: 1 }} />
                 <button className="btn btn-accent btn-sm" onClick={() => {
                   if (!newBlockPlayer.name) return;
-                  const updated = [...tradeBlock, { ...newBlockPlayer, id: Date.now() }];
+                  const updated = [...tradeBlock, { ...newBlockPlayer, id: Date.now(), owner: newBlockPlayer.isMyPlayer ? "My Roster" : "League Player" }];
                   setTradeBlock(updated);
                   localStorage.setItem("trade_block", JSON.stringify(updated));
-                  setNewBlockPlayer({ name: "", team: "", available: true, owner: "My Roster", notes: "" });
+                  setNewBlockPlayer({ name: "", team: "", available: true, isMyPlayer: false, notes: "" });
                 }}>Add</button>
               </div>
             </div>
