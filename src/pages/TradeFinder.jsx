@@ -891,7 +891,9 @@ TRADE_3:
                     const pickCount = giveNames.filter(n => /(\d{4})\s+(1st|2nd|3rd)/i.test(n)).length;
                     const giveTotal = matchedPlayers.reduce((s, v) => s + v, 0);
                     const targetVal = mv?.value || 0;
-                    const gapPct = targetVal > 0 && giveTotal > 0 ? Math.round((giveTotal / targetVal) * 100) : 0;
+                    const rawPct = targetVal > 0 && giveTotal > 0 ? Math.round((giveTotal / targetVal) * 100) : 0;
+                    const gapPct = Math.min(rawPct, 100);
+                    const overpaying = rawPct > 105;
                     const isStarConsolidation = matchedPlayers.length >= 2 && giveTotal >= targetVal * 0.7;
                     return (
                       <div key={trade.id} className="card">
@@ -918,7 +920,7 @@ TRADE_3:
                               <span style={{ color: "var(--text-muted)" }}>Player value match</span>
                               <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700,
                                 color: gapPct >= 90 ? "var(--green)" : gapPct >= 70 ? "var(--accent-dim)" : "var(--text-muted)" }}>
-                                {gapPct > 0 ? `${gapPct}%` : "Players not in DB"}
+                                {gapPct > 0 ? (overpaying ? `Overpaying (${rawPct}%)` : `${gapPct}%`) : "Players not in DB"}
                                 {pickCount > 0 ? ` + ${pickCount} pick${pickCount > 1 ? "s" : ""}` : ""}
                               </span>
                             </div>
