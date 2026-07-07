@@ -902,35 +902,70 @@ After TRADE_3 you may add a brief analysis paragraph.`;
 
       {/* HISTORY */}
       {activeTab === "history" && (
-        <div>
+        <div className="flex-col gap-3">
           {history.length === 0 ? (
             <div className="card"><div className="card-body" style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>No trades evaluated yet</div></div>
           ) : (
-            <div className="flex-col gap-3">
+            <>
+              <div className="flex justify-end gap-2">
+                <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }}
+                  onClick={() => { if (confirm("Clear all trade history?")) setHistory([]); }}>
+                  Clear All
+                </button>
+              </div>
               {history.map(h => (
-                <div key={h.id} className="card" style={{ cursor: "pointer" }}
-                  onClick={() => { setResult(h); setActiveTab("evaluate"); }}>
+                <div key={h.id} className="card">
                   <div className="card-header">
-                    <div>
+                    <div style={{ cursor: "pointer" }} onClick={() => { setResult(h); setActiveTab("evaluate"); }}>
                       <div style={{ fontWeight: 600 }}>vs {h.teamName || "Unknown"}</div>
                       <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(h.date).toLocaleDateString()}</div>
                     </div>
-                    {h.parsed?.verdict && (
-                      <div style={{
-                        marginLeft: "auto",
-                        background: VERDICT_STYLES[h.parsed.verdict]?.bg,
-                        color: VERDICT_STYLES[h.parsed.verdict]?.color,
-                        padding: "3px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-                      }}>{VERDICT_STYLES[h.parsed.verdict]?.label}</div>
-                    )}
+                    <div className="flex gap-2 items-center" style={{ marginLeft: "auto" }}>
+                      {h.parsed?.verdict && (
+                        <div style={{
+                          background: VERDICT_STYLES[h.parsed.verdict]?.bg,
+                          color: VERDICT_STYLES[h.parsed.verdict]?.color,
+                          padding: "3px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+                        }}>{VERDICT_STYLES[h.parsed.verdict]?.label}</div>
+                      )}
+                      <button className="btn btn-ghost btn-xs" style={{ color: "var(--red)" }}
+                        onClick={() => setHistory(prev => prev.filter(x => x.id !== h.id))}>
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ padding: "10px 16px" }}>
+                  <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
                     <div className="text-sm"><span style={{ color: "var(--red)", fontWeight: 600 }}>Out: </span>{h.giving.map(a => a.label).join(", ") || "—"}</div>
                     <div className="text-sm mt-1"><span style={{ color: "var(--green)", fontWeight: 600 }}>In: </span>{h.receiving.map(a => a.label).join(", ") || "—"}</div>
                   </div>
+                  <div style={{ padding: "12px 16px" }}>
+                    <div className="flex gap-2 items-center mb-2">
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Outcome</span>
+                      <div className="flex gap-1">
+                        {["Sent", "Accepted", "Rejected", "Countered", "Not Sent"].map(outcome => (
+                          <button key={outcome}
+                            className="btn btn-xs"
+                            style={{
+                              background: h.outcome === outcome ? "var(--accent)" : "var(--surface-2)",
+                              color: h.outcome === outcome ? "white" : "var(--text-muted)",
+                              border: "1px solid var(--border)",
+                              fontWeight: h.outcome === outcome ? 700 : 400,
+                            }}
+                            onClick={() => setHistory(prev => prev.map(x => x.id === h.id ? { ...x, outcome } : x))}>
+                            {outcome}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <input className="input" style={{ fontSize: 12 }}
+                      placeholder="Notes — what happened, any context..."
+                      value={h.notes || ""}
+                      onChange={e => setHistory(prev => prev.map(x => x.id === h.id ? { ...x, notes: e.target.value } : x))}
+                    />
+                  </div>
                 </div>
               ))}
-            </div>
+            </>
           )}
         </div>
       )}
