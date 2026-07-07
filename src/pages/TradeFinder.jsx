@@ -7,6 +7,7 @@ import { DYNASTY_CONTEXT } from "../utils/league";
 import { useSleeperContext } from "../context/SleeperContext";
 import { MY_PICKS, getPickValue, getAgeCurveMultiplier, getWindowAlignment } from "../utils/pickValues";
 import { getTeamContexts, setTeamContext, getTeamContext, TEAM_STATUSES } from "../utils/teamContext";
+import { getNegotiationLog, saveNegotiationLog, INTERACTION_TYPES, getInteractionColor, getInteractionBg } from "../utils/negotiationLog";
 import { dbSet, dbGet } from "../utils/supabase";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import MarketValueModal from "../components/MarketValueModal";
@@ -246,6 +247,10 @@ export default function TradeFinder() {
   const [marketValues, setMarketValues] = useState([]);
   useEffect(() => { getMarketValues().then(setMarketValues); }, []);
   const [showMarketValues, setShowMarketValues] = useState(false);
+  const [negLog, setNegLog] = useState([]);
+  const [selectedTeamProfile, setSelectedTeamProfile] = useState(null);
+  const [newInteraction, setNewInteraction] = useState({ type: "offer_sent", iGive: "", iReceive: "", notes: "", date: new Date().toISOString().split("T")[0] });
+  useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
 
@@ -270,6 +275,21 @@ export default function TradeFinder() {
   }, []);
 
   function getStats(name) { return findPlayer(nbaPlayers, name); }
+
+  async function addInteraction(rosterId) {
+    if (!newInteraction.notes && !newInteraction.iGive && !newInteraction.iReceive) return;
+    const entry = { ...newInteraction, id: Date.now(), rosterId };
+    const updated = [entry, ...negLog];
+    setNegLog(updated);
+    await saveNegotiationLog(updated);
+    setNewInteraction({ type: "offer_sent", iGive: "", iReceive: "", notes: "", date: new Date().toISOString().split("T")[0] });
+  }
+
+  async function deleteInteraction(id) {
+    const updated = negLog.filter(x => x.id !== id);
+    setNegLog(updated);
+    await saveNegotiationLog(updated);
+  }
 
   function updateTeamCtx(rosterId, field, value) {
     const current = getTeamContext(rosterId);
@@ -990,31 +1010,172 @@ TRADE_3:
       {/* TEAMS */}
       {/* TEAMS */}
       {activeTab === "teams" && (
-        <div className="card">
-          <div className="card-header"><span className="card-title">Team Classification</span></div>
-          <div>
-            {otherTeams.map(team => {
-              const ctx = getTeamContext(team.rosterId);
-              return (
-                <div key={team.rosterId} style={{ padding: "16px", borderBottom: "1px solid var(--border)" }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{team.teamName || team.username}</div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>@{team.username}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, alignItems: "start" }}>
+          {/* Team List */}
+          <div className="card">
+            <div className="card-header"><span className="card-title">Leaguemates</span></div>
+            <div>
+              {otherTeams.map(team => {
+                const ctx = getTeamContext(team.rosterId);
+                const teamNeg = negLog.filter(n => n.rosterId === team.rosterId);
+                const isSelected = selectedTeamProfile === team.rosterId;
+                return (
+                  <div key={team.rosterId}
+                    onClick={() => setSelectedTeamProfile(isSelected ? null : team.rosterId)}
+                    style={{
+                      padding: "12px 16px", borderBottom: "1px solid var(--border)",
+                      cursor: "pointer", background: isSelected ? "var(--accent-light)" : "",
+                      borderLeft: isSelected ? "3px solid var(--accent)" : "3px solid transparent",
+                    }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{team.teamName || team.username}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>@{team.username}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        {teamNeg.length > 0 && (
+                          <span style={{ fontSize: 10, background: "var(--accent-light)", color: "var(--accent-dim)",
+                            padding: "2px 6px", borderRadius: 10, fontWeight: 600 }}>{teamNeg.length}</span>
+                        )}
+                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600,
+                          background: ctx.status === "contender" ? "var(--green-bg)" : ctx.status === "rebuilding" ? "var(--red-bg)" : "var(--surface-2)",
+                          color: ctx.status === "contender" ? "var(--green)" : ctx.status === "rebuilding" ? "var(--red)" : "var(--text-muted)",
+                        }}>{ctx.status || "?"}</span>
+                      </div>
                     </div>
-                    <select className="select" style={{ width: 200, fontSize: 13 }}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Team Profile */}
+          {selectedTeamProfile ? (() => {
+            const team = otherTeams.find(t => t.rosterId === selectedTeamProfile);
+            const ctx = getTeamContext(selectedTeamProfile);
+            const teamNeg = negLog.filter(n => n.rosterId === selectedTeamProfile).sort((a,b) => b.id - a.id);
+            if (!team) return null;
+            return (
+              <div className="flex-col gap-4">
+                {/* Profile Header */}
+                <div className="card">
+                  <div className="card-header">
+                    <div>
+                      <span className="card-title">{team.teamName || team.username}</span>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>@{team.username}</div>
+                    </div>
+                    <select className="select" style={{ width: 180, fontSize: 13, marginLeft: "auto" }}
                       value={ctx.status || "unknown"}
-                      onChange={e => updateTeamCtx(team.rosterId, "status", e.target.value)}>
+                      onChange={e => updateTeamCtx(selectedTeamProfile, "status", e.target.value)}>
                       {TEAM_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                   </div>
-                  <input className="input" placeholder="Notes (e.g. 'selling vets, wants picks and youth')"
-                    value={ctx.notes || ""} style={{ fontSize: 12 }}
-                    onChange={e => updateTeamCtx(team.rosterId, "notes", e.target.value)} />
+                  <div className="card-body">
+                    <div className="input-group">
+                      <label className="label">Scouting Notes</label>
+                      <textarea className="textarea" rows={2}
+                        placeholder="Tendencies, preferences, what they want, what they won't do..."
+                        value={ctx.notes || ""}
+                        onChange={e => updateTeamCtx(selectedTeamProfile, "notes", e.target.value)} />
+                    </div>
+                    {teamNeg.length > 0 && (
+                      <div style={{ marginTop: 12, padding: 10, background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 12 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>AI Pattern</div>
+                        <div style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                          {teamNeg.filter(n => n.type === "declined").length} declined · {teamNeg.filter(n => n.type === "accepted" || n.type === "completed").length} accepted · {teamNeg.filter(n => n.type === "countered").length} countered
+                          {teamNeg.filter(n => n.type === "declined").length >= 2 && " · Tends to decline — raise your offers"}
+                          {teamNeg.filter(n => n.type === "accepted").length >= 2 && " · Tends to accept — push harder"}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Log Interaction */}
+                <div className="card">
+                  <div className="card-header"><span className="card-title">Log Interaction</span></div>
+                  <div className="card-body flex-col gap-3">
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div className="input-group">
+                        <label className="label">Type</label>
+                        <select className="select" value={newInteraction.type}
+                          onChange={e => setNewInteraction(p => ({ ...p, type: e.target.value }))} style={{ fontSize: 13 }}>
+                          {INTERACTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="input-group">
+                        <label className="label">Date</label>
+                        <input className="input" type="date" value={newInteraction.date}
+                          onChange={e => setNewInteraction(p => ({ ...p, date: e.target.value }))} style={{ fontSize: 13 }} />
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div className="input-group">
+                        <label className="label">I Offered</label>
+                        <input className="input" placeholder="e.g. Wagner + 1.08" value={newInteraction.iGive}
+                          onChange={e => setNewInteraction(p => ({ ...p, iGive: e.target.value }))} style={{ fontSize: 13 }} />
+                      </div>
+                      <div className="input-group">
+                        <label className="label">They Offered / I Asked For</label>
+                        <input className="input" placeholder="e.g. Brandon Miller" value={newInteraction.iReceive}
+                          onChange={e => setNewInteraction(p => ({ ...p, iReceive: e.target.value }))} style={{ fontSize: 13 }} />
+                      </div>
+                    </div>
+                    <div className="input-group">
+                      <label className="label">Notes</label>
+                      <textarea className="textarea" rows={2}
+                        placeholder="What happened, their reaction, what they said..."
+                        value={newInteraction.notes}
+                        onChange={e => setNewInteraction(p => ({ ...p, notes: e.target.value }))} />
+                    </div>
+                    <button className="btn btn-accent w-full" onClick={() => addInteraction(selectedTeamProfile)}>
+                      + Log Interaction
+                    </button>
+                  </div>
+                </div>
+
+                {/* Interaction History */}
+                {teamNeg.length > 0 && (
+                  <div className="card">
+                    <div className="card-header"><span className="card-title">Negotiation History</span></div>
+                    <div>
+                      {teamNeg.map(n => (
+                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)",
+                          borderLeft: `3px solid ${getInteractionColor(n.type)}` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
+                              background: getInteractionBg(n.type), color: getInteractionColor(n.type),
+                              textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              {INTERACTION_TYPES.find(t => t.value === n.type)?.label || n.type}
+                            </span>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{n.date}</span>
+                              <button className="btn btn-ghost btn-xs" style={{ color: "var(--red)" }}
+                                onClick={() => deleteInteraction(n.id)}>✕</button>
+                            </div>
+                          </div>
+                          {(n.iGive || n.iReceive) && (
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, margin: "6px 0", fontSize: 12 }}>
+                              {n.iGive && <div><span style={{ color: "var(--red)", fontWeight: 600 }}>I offered: </span>{n.iGive}</div>}
+                              {n.iReceive && <div><span style={{ color: "var(--green)", fontWeight: 600 }}>For: </span>{n.iReceive}</div>}
+                            </div>
+                          )}
+                          {n.notes && <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{n.notes}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })() : (
+            <div className="card">
+              <div className="card-body" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
+                <div className="font-semibold" style={{ fontSize: 14 }}>Select a leaguemate to view their profile</div>
+                <div className="text-sm mt-2">Track negotiations, tendencies, and build intel over the season</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
