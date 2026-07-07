@@ -5,6 +5,10 @@ import { callClaude } from "../utils/api";
 import { calcFantasyScore, calcSeasonAverageFP, LOCK_IN_CONTEXT } from "../utils/league";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { useSleeperContext } from "../context/SleeperContext";
+import { buildFullContext } from "../utils/fullContext";
+import { getMarketValues } from "../utils/marketValues";
+import { getNegotiationLog } from "../utils/negotiationLog";
+import { getTeamContexts } from "../utils/teamContext";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -24,7 +28,11 @@ function StatInput({ label, field, value, onChange }) {
 }
 
 export default function LockInAdvisor() {
-  const { myTeam } = useSleeperContext();
+  const { myTeam, teams, startupDraft } = useSleeperContext();
+  const [marketValues, setMarketValues] = useState([]);
+  const [negLog, setNegLog] = useState([]);
+  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
+  useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
   const [nbaPlayers, setNbaPlayers] = useState([]);
   useEffect(() => {
     fetchPlayerSeasonStats().then(setNbaPlayers);
@@ -90,6 +98,19 @@ export default function LockInAdvisor() {
       const seasonAvgFP = getSeasonAvgFP(activeName);
       const delta = seasonAvgFP ? Math.round((fantasyScore - seasonAvgFP) * 10) / 10 : null;
       const deltaStr = delta !== null ? `${delta > 0 ? "+" : ""}${delta} vs season average` : "Season average unavailable";
+      const lockInCtx = buildFullContext({
+        myTeam,
+        nbaPlayers,
+        marketValues,
+        negLog,
+        tradeBlock: JSON.parse(localStorage.getItem("trade_block") || "[]"),
+        teamContexts: getTeamContexts(),
+        startupDraft,
+        teams,
+        targetRosterId: null,
+        pageContext: {},
+      });
+
       const prompt = `Lock-In Decision for ${activeName}:
 
 COMPLETED GAME: ${game.pts}pts / ${game.reb}reb / ${game.ast}ast / ${game.stl}stl / ${game.blk}blk / ${game.to}TO / ${game.threesMade} 3PM

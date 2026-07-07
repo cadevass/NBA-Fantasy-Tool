@@ -4,6 +4,10 @@ import { useSleeperContext } from "../context/SleeperContext";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { calcSeasonAverageFP } from "../utils/league";
 import { callClaude } from "../utils/api";
+import { buildFullContext } from "../utils/fullContext";
+import { getMarketValues } from "../utils/marketValues";
+import { getNegotiationLog } from "../utils/negotiationLog";
+import { getTeamContexts } from "../utils/teamContext";
 
 const TEAM_ABB_MAP = {
   "ATL": "Atlanta Hawks", "BOS": "Boston Celtics", "BKN": "Brooklyn Nets",
@@ -38,6 +42,10 @@ export default function Dashboard() {
   const [playerB, setPlayerB] = useState("");
   const [startSitLoading, setStartSitLoading] = useState(false);
   const [startSitResult, setStartSitResult] = useState(null);
+  const [marketValues, setMarketValues] = useState([]);
+  const [negLog, setNegLog] = useState([]);
+  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
+  useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
 
   const today = new Date().toLocaleDateString("en-AU", { 
     weekday: "long", day: "numeric", month: "long", year: "numeric",
@@ -139,6 +147,19 @@ export default function Dashboard() {
       const mqA = pA?.game ? getMatchupQuality(pA.game.opponent) : null;
       const mqB = pB?.game ? getMatchupQuality(pB.game.opponent) : null;
 
+      const dashCtx = buildFullContext({
+        myTeam,
+        nbaPlayers,
+        marketValues,
+        negLog,
+        tradeBlock: JSON.parse(localStorage.getItem("trade_block") || "[]"),
+        teamContexts: getTeamContexts(),
+        startupDraft: [],
+        teams: [],
+        targetRosterId: null,
+        pageContext: {},
+      });
+
       const prompt = `Start/Sit decision for The Backshot Dynasty (Sleeper Lock-In mode, AWST timezone).
 
 PLAYER A: ${playerA}
@@ -149,10 +170,10 @@ PLAYER B: ${playerB}
 Season Avg FP: ${avgB || "unknown"} | Today vs: ${pB?.game?.opponent || "?"} (${mqB?.label || "?"} matchup)
 2025-26 Stats: ${sB ? `${sB.pts}pts/${sB.reb}reb/${sB.ast}ast/${sB.stl}stl/${sB.blk}blk` : "unknown"}
 
-This is a hypothetical fantasy basketball scenario for the upcoming 2026-27 season. Search for their projected roles and outlooks for next season.
+${dashCtx}
 
-Scoring: pts×0.5, reb×1, ast×1, stl×2, blk×2, TO×-1, 3PM×0.5, DD+1, TD+2, 40pts+2, 50pts+2
-This is Lock-In mode — ceiling matters more than floor. High-variance players are premium.
+Search for their projected roles and outlooks for next season.
+Lock-In mode — ceiling matters more than floor. High-variance players are premium.
 
 Respond in this exact format:
 START: [Player A or Player B]
