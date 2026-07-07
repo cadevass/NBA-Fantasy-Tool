@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Home } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import BigBoard from "./pages/BigBoard";
 import TradeFinder from "./pages/TradeFinder";
@@ -8,7 +9,7 @@ import DraftNight from "./pages/DraftNight";
 import RosterPanel from "./components/RosterPanel";
 
 const TABS = [
-  { id: "dashboard", label: "🏠" },
+  { id: "dashboard", label: null, icon: true },
   { id: "bigboard", label: "Big Board" },
   { id: "trade", label: "Trade Evaluator" },
   { id: "lockin", label: "Lock-In Advisor" },
@@ -36,7 +37,7 @@ export default function App() {
           {TABS.map(t => (
             <button key={t.id} className={`nav-tab${tab === t.id ? " active" : ""}`}
               onClick={() => setTab(t.id)}>
-              {t.label}
+              {t.icon ? <Home size={16} /> : t.label}
             </button>
           ))}
         </nav>

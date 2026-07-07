@@ -81,7 +81,7 @@ export default function Dashboard() {
         });
 
         // Filter roster to players with games today
-        const active = allPlayers
+        let active = allPlayers
           .filter(p => p.team && teamsPlaying.has(p.team))
           .map(p => ({
             ...p,
