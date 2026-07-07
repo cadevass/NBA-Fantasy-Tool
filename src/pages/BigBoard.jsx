@@ -1,10 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, X, Newspaper, Zap, Edit2 } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useSupabaseArray } from "../hooks/useSupabaseStorage";
 import { callClaude } from "../utils/api";
 import { DYNASTY_CONTEXT, LOCK_IN_CONTEXT } from "../utils/league";
 import { useSleeperContext } from "../context/SleeperContext";
+import { buildFullContext } from "../utils/fullContext";
+import { getMarketValues } from "../utils/marketValues";
+import { getNegotiationLog } from "../utils/negotiationLog";
+import { getTeamContexts } from "../utils/teamContext";
+import { fetchPlayerSeasonStats } from "../utils/nbaStats";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 
@@ -46,7 +51,13 @@ function CeilingDots({ value }) {
 }
 
 export default function BigBoard() {
-  const { myTeam } = useSleeperContext();
+  const { myTeam, teams, startupDraft } = useSleeperContext();
+  const [marketValues, setMarketValues] = useState([]);
+  const [negLog, setNegLog] = useState([]);
+  const [nbaPlayers, setNbaPlayers] = useState([]);
+  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
+  useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
+  useEffect(() => { fetchPlayerSeasonStats().then(setNbaPlayers); }, []);
   const { value: prospects, synced: prospectsSynced, addItem: addProspect, updateItem: updateProspect, deleteItem: deleteProspectDb, replaceAll: replaceProspects } = useSupabaseArray("bb_prospects");
   const [news, setNews] = useLocalStorage("bb_news", []);
   const [showModal, setShowModal] = useState(false);
@@ -84,6 +95,19 @@ export default function BigBoard() {
         ? [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])].map(p => `${p.name} (${p.pos.join("/")}, ${p.team})`).join(", ")
         : "Roster not loaded yet";
 
+      const bbCtx = buildFullContext({
+        myTeam,
+        nbaPlayers,
+        marketValues,
+        negLog,
+        tradeBlock: JSON.parse(localStorage.getItem("trade_block") || "[]"),
+        teamContexts: getTeamContexts(),
+        startupDraft,
+        teams,
+        targetRosterId: null,
+        pageContext: {},
+      });
+
       const prompt = `Analyse this 2026 NBA Draft prospect for my dynasty team. Search the web for their current NBA landing spot, team fit, and any recent news.
 
 NAME: ${form.name}
@@ -95,17 +119,16 @@ PROJECTED NBA ROLE: ${form.projRole}
 LOCK-IN CEILING: ${form.ceilingRating}/5 | DYNASTY VALUE: ${form.dynastyRating}/5
 MY NOTES: ${form.notes}
 
-MY CURRENT ROSTER: ${rosterSummary}
+${bbCtx}
+
 ${DYNASTY_CONTEXT}
 ${LOCK_IN_CONTEXT}
-
 Give me:
 1. FIT SUMMARY (2-3 sentences — fantasy roster fit, positional slot, dynasty window alignment)
-2. NBA LANDING SPOT ANALYSIS (search for where they were drafted and what that means for their fantasy timeline — usage, role, team pace)
+2. NBA LANDING SPOT ANALYSIS (search for where they were drafted and what that means for their fantasy timeline)
 3. LOCK-IN CEILING ASSESSMENT (is the rating accurate for this scoring system?)
 4. SUGGESTED TIER (1-5 with brief reason)
 5. ONE KEY RISK for my team specifically
-
 Be direct. No fluff. Fantasy dynasty context only — not real NBA roster construction.`;
 
       const result = await callClaude([{ role: "user", content: prompt }]);
