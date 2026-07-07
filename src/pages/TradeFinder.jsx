@@ -226,7 +226,7 @@ const VERDICT_STYLES = {
 
 export default function TradeFinder() {
   const { myTeam, teams, startupDraft } = useSleeperContext();
-  const { value: history, addItem: addTradeHistory } = useSupabaseArray("trade_history_v2");
+  const { value: history, addItem: addTradeHistory, updateItem: updateTradeHistory, setValueAndSync } = useSupabaseArray("trade_history_v2");
   const [nbaPlayers, setNbaPlayers] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
   const [teamContexts, setTeamContextsState] = useState(getTeamContexts());
@@ -909,7 +909,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
             <>
               <div className="flex justify-end gap-2">
                 <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }}
-                  onClick={() => { if (confirm("Clear all trade history?")) setHistory([]); }}>
+                  onClick={() => { if (confirm("Clear all trade history?")) setValueAndSync([]); }}>
                   Clear All
                 </button>
               </div>
@@ -929,7 +929,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
                         }}>{VERDICT_STYLES[h.parsed.verdict]?.label}</div>
                       )}
                       <button className="btn btn-ghost btn-xs" style={{ color: "var(--red)" }}
-                        onClick={() => setHistory(prev => prev.filter(x => x.id !== h.id))}>
+                        onClick={() => setValueAndSync(history.filter(x => x.id !== h.id))}>
                         ✕
                       </button>
                     </div>
@@ -951,7 +951,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
                               border: "1px solid var(--border)",
                               fontWeight: h.outcome === outcome ? 700 : 400,
                             }}
-                            onClick={() => setHistory(prev => prev.map(x => x.id === h.id ? { ...x, outcome } : x))}>
+                            onClick={() => updateTradeHistory(h.id, { ...h, outcome })}>
                             {outcome}
                           </button>
                         ))}
@@ -960,7 +960,7 @@ After TRADE_3 you may add a brief analysis paragraph.`;
                     <input className="input" style={{ fontSize: 12 }}
                       placeholder="Notes — what happened, any context..."
                       value={h.notes || ""}
-                      onChange={e => setHistory(prev => prev.map(x => x.id === h.id ? { ...x, notes: e.target.value } : x))}
+                      onChange={e => updateTradeHistory(h.id, { ...h, notes: e.target.value })}
                     />
                   </div>
                 </div>
