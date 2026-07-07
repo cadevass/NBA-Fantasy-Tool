@@ -214,15 +214,24 @@ export default function MarketValueModal({ onClose }) {
                   <select className="select" value={newBlockPlayer.name}
                     onChange={e => {
                       const p = myRosterPlayers.find(x => x.name === e.target.value);
-                      setNewBlockPlayer(prev => ({ ...prev, name: e.target.value, team: p?.team || "" }));
+                      setNewBlockPlayer(prev => ({ ...prev, name: e.target.value, team: "Me" }));
                     }} style={{ fontSize: 13 }}>
                     <option value="">Select from my roster...</option>
-                    {myRosterPlayers.map(p => <option key={p.name} value={p.name}>{p.name} ({p.team})</option>)}
+                    {myRosterPlayers.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
                   </select>
-                ) : (
-                  <input className="input" placeholder="Player name" value={newBlockPlayer.name}
-                    onChange={e => setNewBlockPlayer(p => ({ ...p, name: e.target.value }))} style={{ fontSize: 13 }} />
-                )}
+                ) : (() => {
+                  const ownerTeam = (teams || []).find(t => (t.teamName || t.username) === newBlockPlayer.team);
+                  const ownerRoster = ownerTeam ? [...ownerTeam.starters, ...ownerTeam.bench, ...(ownerTeam.taxi||[])] : [];
+                  return newBlockPlayer.team ? (
+                    <select className="select" value={newBlockPlayer.name}
+                      onChange={e => setNewBlockPlayer(p => ({ ...p, name: e.target.value }))} style={{ fontSize: 13 }}>
+                      <option value="">Select player...</option>
+                      {ownerRoster.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                    </select>
+                  ) : (
+                    <input className="input" placeholder="Select owner first..." disabled style={{ fontSize: 13, opacity: 0.5 }} />
+                  );
+                })()}
                 <select className="select" value={newBlockPlayer.team}
                   onChange={e => setNewBlockPlayer(p => ({ ...p, team: e.target.value }))} style={{ fontSize: 13 }}
                   disabled={newBlockPlayer.isMyPlayer}>
