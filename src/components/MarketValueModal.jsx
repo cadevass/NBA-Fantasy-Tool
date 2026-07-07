@@ -226,10 +226,13 @@ export default function MarketValueModal({ onClose }) {
                 <select className="select" value={newBlockPlayer.team}
                   onChange={e => setNewBlockPlayer(p => ({ ...p, team: e.target.value }))} style={{ fontSize: 13 }}
                   disabled={newBlockPlayer.isMyPlayer}>
-                  <option value="">Team...</option>
-                  {["ATL","BOS","BKN","CHA","CHI","CLE","DAL","DEN","DET","GSW","HOU","IND","LAC","LAL","MEM","MIA","MIL","MIN","NOP","NYK","OKC","ORL","PHI","PHX","POR","SAC","SAS","TOR","UTA","WAS"].map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  <option value="">Owner...</option>
+                  {newBlockPlayer.isMyPlayer
+                    ? <option value="Me">Me</option>
+                    : (teams || []).filter(t => !t.isMe).map(t => (
+                        <option key={t.rosterId} value={t.teamName || t.username}>{t.teamName || t.username}</option>
+                      ))
+                  }
                 </select>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
