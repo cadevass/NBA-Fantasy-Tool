@@ -59,7 +59,6 @@ function PlayerCard({ player, stats, onRemove, side }) {
       }}>
         <X size={12} />
       </button>
-    {showMarketValues && <MarketValueModal onClose={() => setShowMarketValues(false)} />}
     </div>
   );
 }
@@ -88,7 +87,6 @@ function PickCard({ pick, onRemove, side }) {
       }}>
         <X size={12} />
       </button>
-    {showMarketValues && <MarketValueModal onClose={() => setShowMarketValues(false)} />}
     </div>
   );
 }
@@ -193,7 +191,6 @@ function PlayerSearchList({ players, onAdd, placeholder, side }) {
           )}
         </div>
       )}
-    {showMarketValues && <MarketValueModal onClose={() => setShowMarketValues(false)} />}
     </div>
   );
 }
@@ -217,7 +214,6 @@ function DimensionRow({ label, score, reasoning }) {
           {reasoning || "See overall summary for context."}
         </div>
       )}
-    {showMarketValues && <MarketValueModal onClose={() => setShowMarketValues(false)} />}
     </div>
   );
 }
