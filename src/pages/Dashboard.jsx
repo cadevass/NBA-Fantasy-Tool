@@ -160,13 +160,14 @@ CONFIDENCE: [High or Medium or Low]
 REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
 
       const text = await callClaude([{ role: "user", content: prompt }]);
+      const cleanStr = s => s?.replace(/\*\*/g, '').replace(/\*/g, '').trim();
       const startM = text.match(/START:\s*(.+)/i);
       const confM = text.match(/CONFIDENCE:\s*(High|Medium|Low)/i);
       const reasonM = text.match(/REASONING:\s*([\s\S]+?)$/i);
       setStartSitResult({
-        start: startM?.[1]?.trim(),
+        start: cleanStr(startM?.[1]),
         confidence: confM?.[1],
-        reasoning: reasonM?.[1]?.trim(),
+        reasoning: cleanStr(reasonM?.[1]),
         raw: text,
       });
     } catch (e) {
@@ -330,7 +331,7 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
                         {startSitResult.confidence} Confidence · Start
                       </span>
                       <div style={{ fontWeight: 700, fontSize: 20, color: "var(--green)", marginTop: 2 }}>
-                        {startSitResult.start}
+                        {startSitResult.start?.replace(/\*\*/g, "").replace(/\*/g, "").trim()}
                       </div>
                     </div>
                   )}
