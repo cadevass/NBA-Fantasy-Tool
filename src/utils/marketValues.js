@@ -27,12 +27,28 @@ export async function getMarketValues() {
 }
 
 export async function saveMarketValues(values) {
+  localStorage.setItem(KEY, JSON.stringify(values));
   try {
-    localStorage.setItem(KEY, JSON.stringify(values));
     await dbSet("app_settings", KEY, values);
   } catch (e) {
-    console.error("Failed to save market values:", e);
+    console.warn("Supabase unavailable — saved to localStorage, will sync when online");
   }
+}
+
+// Auto-sync localStorage to Supabase when network comes back online
+if (typeof window !== "undefined") {
+  window.addEventListener("online", async () => {
+    const local = localStorage.getItem(KEY);
+    if (local) {
+      try {
+        const data = JSON.parse(local);
+        await dbSet("app_settings", KEY, data);
+        console.log("Market values synced to Supabase");
+      } catch (e) {
+        console.warn("Auto-sync failed:", e);
+      }
+    }
+  });
 }
 
 export const TRENDS = ["Rising", "Stable", "Falling"];
