@@ -311,7 +311,7 @@ Write a 3-5 sentence behavioural profile covering:
 3. How to approach them (lead with what, avoid what)
 4. Overall assessment of how easy/hard they are to deal with
 
-Be specific to the interactions above. No generic advice. Dynasty fantasy context only.`;
+Be specific to the interactions above. No generic advice. Dynasty fantasy context only. Plain text only — no markdown, no asterisks, no headers, no bullet points.`;
 
       const profile = await callClaude([{ role: "user", content: prompt }]);
       const updated = { ...aiProfiles, [rosterId]: profile };
@@ -1131,7 +1131,7 @@ TRADE_3:
                         </div>
                         {aiProfiles[selectedTeamProfile] ? (
                           <div style={{ padding: 10, background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 12, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-                            {aiProfiles[selectedTeamProfile]}
+                            {aiProfiles[selectedTeamProfile].replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,3} /g, '').replace(/---/g, '').trim()}
                           </div>
                         ) : (
                           <div style={{ padding: 10, background: "var(--surface-2)", borderRadius: "var(--radius)", fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
