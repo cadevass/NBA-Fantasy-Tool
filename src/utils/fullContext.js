@@ -45,20 +45,7 @@ ${rosterLines.join("\n")}`);
     const sellCandidates = marketValues.filter(m => m.category === "My Roster" && (m.value < 70 || m.trend === "Falling")).map(m => `${m.name} (${m.value}/100, ${m.trend})`);
     const holds = marketValues.filter(m => m.category === "My Roster" && m.value >= 70 && m.value < 85 && m.trend !== "Falling").map(m => m.name);
 
-    if (untouchables.length > 0) {
-      sections.push(`MY UNTOUCHABLES (do not trade under any circumstances — only for generational return):
-${untouchables.join(", ")}`);
-    }
-
-    if (sellCandidates.length > 0) {
-      sections.push(`MY SELL CANDIDATES (open to moving at the right price):
-${sellCandidates.join("\n")}`);
-    }
-
-    if (holds.length > 0) {
-      sections.push(`MY HOLDS (not actively shopping but available for significant overpay):
-${holds.join(", ")}`);
-    }
+    sections.push(`MARKET VALUE SCALE: Values are out of 100 representing current dynasty trade market value. 90+ = elite franchise asset (very high ask required but available for the right price). 75-89 = strong asset (meaningful return needed). 60-74 = solid tradeable piece. Below 60 = declining or limited value, more moveable. NO player is completely untouchable — the right offer changes everything. Use these values to calibrate realistic trade expectations, not as hard rules.`);
   }
 
   // ── MY TRADE BLOCK ──
