@@ -12,6 +12,7 @@ import { dbSet, dbGet } from "../utils/supabase";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import MarketValueModal from "../components/MarketValueModal";
 import { buildDraftContext } from "../utils/sleeperDraft";
+import { buildFullContext } from "../utils/fullContext";
 import { getMarketValues } from "../utils/marketValues";
 
 const PICK_YEARS = ["2026", "2027", "2028"];
@@ -322,11 +323,18 @@ export default function TradeFinder() {
         : "Unknown";
 
       // Build market value context
-      const mvContext = [...giving, ...receiving].map(a => {
-        if (a.type === "pick") return null;
-        const mv = marketValues.find(m => m.name.toLowerCase().replace(/[^a-z0-9 ]/g, '') === a.label.toLowerCase().replace(/[^a-z0-9 ]/g, ''));
-        return mv ? `${a.label}: ${mv.value}/100 (${mv.trend}) — ${mv.summary}` : null;
-      }).filter(Boolean).join("\n");
+      const fullCtx = buildFullContext({
+        myTeam,
+        nbaPlayers,
+        marketValues,
+        negLog,
+        tradeBlock: JSON.parse(localStorage.getItem("trade_block") || "[]"),
+        teamContexts: getTeamContexts(),
+        startupDraft,
+        teams,
+        targetRosterId: selectedTeam?.rosterId || null,
+        pageContext: { additionalContext: otherContext },
+      });
 
       const prompt = `Evaluate this dynasty fantasy basketball trade. Search the web for any current player news or injuries.
 
@@ -338,20 +346,10 @@ ${recStr}
 
 OTHER TEAM: ${teamCtx}
 
-STARTUP DRAFT CONTEXT:
-${buildDraftContext(startupDraft, teams || [])}
-
-MARKET VALUE DATABASE (grounded player valuations — use as baseline):
-${mvContext || "No players found in market value database"}
-
-CRITICAL INTEL (treat this as hard facts — declined offers, negotiation history, key context):
-${otherContext || "None"}
-
-${DYNASTY_CONTEXT}
+${fullCtx}
 
 CRITICAL INSTRUCTION: Start your response with DYNASTY_VALUE_DELTA on the very first line. No headers, no markdown, no preamble.
 IMPORTANT: Fantasy dynasty only. Positional slots and scoring output only.
-
 Score each 0-100 with 1-2 sentences reasoning:
 DYNASTY_VALUE_DELTA: [score] | [reasoning]
 IMMEDIATE_IMPACT: [score] | [reasoning]
@@ -450,52 +448,41 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
       const startupPickStr = targetStartupPick
         ? `Drafted at Pick ${targetStartupPick.pickNo} (Round ${targetStartupPick.round}) in the startup — this indicates their attachment level`
         : "Startup pick position unknown";
+      const offerFullCtx = buildFullContext({
+        myTeam,
+        nbaPlayers,
+        marketValues,
+        negLog,
+        tradeBlock: JSON.parse(localStorage.getItem("trade_block") || "[]"),
+        teamContexts: getTeamContexts(),
+        startupDraft,
+        teams,
+        targetRosterId: targetTeam?.rosterId || null,
+        pageContext: { additionalContext: suggestContext },
+      });
+
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).
 
 TARGET PLAYER: ${targetPlayerStr}
-OWNER: ${targetTeam?.teamName || targetTeam?.username} (Status: ${targetTeamCtx?.status || "unknown"})
-OWNER NOTES: ${targetTeamCtx?.notes || "none"}
+OWNER: ${targetTeam?.teamName || targetTeam?.username}
 STARTUP DRAFT: ${startupPickStr}
 
-CRITICAL CONTEXT — READ THIS FIRST BEFORE BUILDING ANY PACKAGES:
+${offerFullCtx}
+
+CRITICAL CONTEXT — READ THIS FIRST:
 ${suggestContext || "none"}
 
-If the context mentions a previously declined offer, use it as your calibration baseline:
-- TRADE_1 (Opening Anchor) must be ABOVE the declined offer — never offer less than what was already rejected
-- TRADE_2 (Fair Value) must be meaningfully better than the declined offer  
-- TRADE_3 (Walk-Away Max) is the absolute ceiling — if rejected, walk away
+If context mentions a previously declined offer — TRADE_1 must be ABOVE that offer. Never offer less than what was already rejected.
 
-STEP 1 — Search the web for ${targetPlayer.name}'s current dynasty value, 2026-27 outlook, and ${targetTeam?.teamName || targetTeam?.username}'s roster needs.
-STEP 2 — Determine ${targetPlayer.name}'s TRUE market value from your research.
-STEP 3 — Using the declined offer as your floor (if mentioned), build 3 escalating packages. Do not lowball.
-
-MY FULL ROSTER:
-${myRosterStr}
-
-MY DRAFT CAPITAL: ${myPicks}
-
-EVERY player on my roster is available at the right price. No restrictions.
-
-CRITICAL: Do NOT think in terms of "sell candidates" or "expendable assets." That is the wrong framework. Instead:
-1. First determine what ${targetPlayer.name} is worth in dynasty value
-2. Then look at MY roster and find combinations of players whose COMBINED dynasty value matches that
-3. If ${targetPlayer.name} is elite, the packages should include my better players — that is realistic
-4. A package of only my weakest assets for an elite player is NOT realistic and must never be suggested
-
-THEIR FULL ROSTER:
-${allTeamRosters}
-
-STARTUP DRAFT CONTEXT (attachment levels for both teams):
-${draftCtx}
-
-${DYNASTY_CONTEXT}
+STEP 1 — Search the web for ${targetPlayer.name}'s current dynasty value and 2026-27 outlook.
+STEP 2 — Determine their TRUE market value from research. Cross-reference with the market values in the context above.
+STEP 3 — Build 3 escalating packages using the declined offer as your floor (if mentioned).
 
 RULES:
 1. ONLY use players from MY ROSTER or THEIR ROSTER. Never invent players.
-2. FANTASY ONLY — value = pts/reb/ast/stl×2/blk×2/3PM×0.5/DD+1/TD+2. Never mention real NBA fit or team chemistry.
-3. Think from THEIR perspective first — what do they genuinely need? What would make them move ${targetPlayer.name}?
-4. Match the cost to the player's TRUE value. If he is elite, the packages should hurt. That is realistic.
-5. Startup draft context tells you attachment levels — a player drafted in round 1-2 who is performing well will cost more to pry loose.
+2. FANTASY ONLY — value = pts/reb/ast/stl×2/blk×2/3PM×0.5/DD+1/TD+2.
+3. Match cost to TRUE value — if elite, packages should include better players.
+4. Use negotiation history above to calibrate — past declines tell you what isn't enough.
 
 IMPORTANT: Start your response with TRADE_1: on the very first line. No preamble. No headers.
 
