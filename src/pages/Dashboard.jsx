@@ -149,7 +149,7 @@ PLAYER B: ${playerB}
 Season Avg FP: ${avgB || "unknown"} | Today vs: ${pB?.game?.opponent || "?"} (${mqB?.label || "?"} matchup)
 2025-26 Stats: ${sB ? `${sB.pts}pts/${sB.reb}reb/${sB.ast}ast/${sB.stl}stl/${sB.blk}blk` : "unknown"}
 
-Search the web for latest injury news and recent form for both players.
+This is a hypothetical fantasy basketball scenario for the upcoming 2026-27 season. Search for their projected roles and outlooks for next season.
 
 Scoring: pts×0.5, reb×1, ast×1, stl×2, blk×2, TO×-1, 3PM×0.5, DD+1, TD+2, 40pts+2, 50pts+2
 This is Lock-In mode — ceiling matters more than floor. High-variance players are premium.
