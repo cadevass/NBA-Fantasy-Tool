@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Home } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Rankings from "./pages/Rankings";
-import Rankings from "./pages/Rankings";
 import BigBoard from "./pages/BigBoard";
 import TradeFinder from "./pages/TradeFinder";
 import LockInAdvisor from "./pages/LockInAdvisor";
