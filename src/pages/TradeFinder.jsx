@@ -463,8 +463,7 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
     } catch { return null; }
   }
   async function getSuggestions() {
-    console.log("getSuggestions called", { suggestTeamId, targetPlayer });
-    if (suggestTeamId === null || !targetPlayer) { console.log("RETURNING EARLY"); return; }
+    if (suggestTeamId === null || !targetPlayer) return;
     setSuggestLoading(true); setSuggestions(null);
     try {
       const targetTeam = suggestTeamId === -1 ? null : otherTeams.find(t => t.rosterId === suggestTeamId);
@@ -498,7 +497,6 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
       const startupPickStr = targetStartupPick
         ? `Drafted at Pick ${targetStartupPick.pickNo} (Round ${targetStartupPick.round}) in the startup — this indicates their attachment level`
         : "Startup pick position unknown";
-      console.log("building context", { myTeam: !!myTeam, nbaPlayers: nbaPlayers?.length, marketValues: marketValues?.length, negLog: negLog?.length });
       const offerFullCtx = buildFullContext({
         myTeam,
         nbaPlayers,
