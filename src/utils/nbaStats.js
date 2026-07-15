@@ -83,15 +83,24 @@ export async function fetchPlayerSeasonStats() {
 
 export function findPlayer(players, name) {
   if (!players?.length || !name) return null;
-  const lower = name.toLowerCase().trim();
-  let match = players.find(p => p.name?.toLowerCase() === lower);
+  // Normalise — strip apostrophes, dots, hyphens, lowercase
+  const norm = s => s.toLowerCase().replace(/['.\-]/g, "").replace(/\s+/g, " ").trim();
+  const lower = norm(name);
+  // Exact match after normalisation
+  let match = players.find(p => norm(p.name) === lower);
   if (match) return match;
+  // Last name + first initial match
   const parts = lower.split(" ");
   const lastName = parts.slice(-1)[0];
   const firstInitial = parts[0]?.[0];
   match = players.find(p => {
-    const pLower = p.name?.toLowerCase() || "";
-    return pLower.includes(lastName) && pLower.startsWith(firstInitial);
+    const pNorm = norm(p.name);
+    return pNorm.includes(lastName) && pNorm.startsWith(firstInitial);
   });
+  if (match) return match;
+  // Last name only match (for short names like "Fox")
+  if (parts.length >= 2) {
+    match = players.find(p => norm(p.name).endsWith(lastName) && norm(p.name).startsWith(parts[0]));
+  }
   return match || null;
 }
