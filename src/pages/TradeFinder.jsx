@@ -130,7 +130,7 @@ function PlayerSearchList({ players, onAdd, placeholder, side }) {
               onMouseEnter={e => e.currentTarget.style.background = "var(--surface-2)"}
               onMouseLeave={e => e.currentTarget.style.background = ""}>
               <div>
-                <div style={{ fontWeight: 500, fontSize: 13 }}>{p.name}{s {p.name}</div>{p.name}</div> ` (Age ${s.age})`}</div>
+                  <div style={{ fontWeight: 500, fontSize: 13 }}>{p.name}{s ? ` (Age ${s.age})` : ""}</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                   {p.pos?.join("/") || ""} · {p.team}
                 </div>
