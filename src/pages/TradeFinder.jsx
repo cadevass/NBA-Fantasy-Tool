@@ -463,7 +463,8 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
     } catch { return null; }
   }
   async function getSuggestions() {
-    if (suggestTeamId === null || !targetPlayer) return;
+    console.log("getSuggestions called", { suggestTeamId, targetPlayer });
+    if (suggestTeamId === null || !targetPlayer) { console.log("RETURNING EARLY"); return; }
     setSuggestLoading(true); setSuggestions(null);
     try {
       const targetTeam = suggestTeamId === -1 ? null : otherTeams.find(t => t.rosterId === suggestTeamId);
