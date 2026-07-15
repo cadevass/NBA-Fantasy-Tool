@@ -16,6 +16,7 @@ export function buildFullContext({
   targetRosterId = null,
   pageContext = {},
   aiProfiles = {},
+  dynastyMode = "contending",
 }) {
   const sections = [];
 
