@@ -558,7 +558,9 @@ TRADE_2:
 TRADE_3:
 [same format — walk-away max]`;
 
+      console.log("calling Claude with prompt length:", prompt.length);
       const text = await callClaude([{ role: "user", content: prompt }]);
+      console.log("Claude responded:", text?.length);
       setSuggestions(text);
     } catch (e) {
       setSuggestions(`Error: ${e.message}`);
