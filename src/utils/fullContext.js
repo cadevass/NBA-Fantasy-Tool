@@ -22,7 +22,7 @@ export function buildFullContext({
 
   // ── DYNASTY MODE ──
   sections.push(`DYNASTY MODE: ${dynastyMode.toUpperCase()}
-${dynastyMode === "contending" ? "Prioritise: proven production, win-now assets, floor reliability, immediate fantasy output. Weight veterans and established contributors higher." : "Prioritise: youth, upside, draft capital, long-term ceiling. Weight age curve and development trajectory higher than current production."}`);
+${dynastyMode === "contending" ? "You are CONTENDING NOW. You are willing to trade picks and younger players to win immediately. Prioritise proven production, floor reliability, and immediate fantasy output. You can afford to give up future assets for proven contributors." : "You are REBUILDING. You are willing to trade proven veterans and win-now players to accumulate picks, youth, and long-term assets. Prioritise age curve, upside, and draft capital. Veterans are expendable — youth and picks are the currency."}`);
 
   // ── SCORING SYSTEM ──
   sections.push(`SCORING SYSTEM (Lock-In mode — think in fantasy points, not raw stats):
