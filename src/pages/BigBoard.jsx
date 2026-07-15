@@ -106,6 +106,7 @@ export default function BigBoard() {
         teams,
         targetRosterId: null,
         pageContext: {},
+        dynastyMode: localStorage.getItem('dynasty_mode') || 'contending',
       });
 
       const prompt = `Analyse this 2026 NBA Draft prospect for my dynasty team. Search the web for their current NBA landing spot, team fit, and any recent news.

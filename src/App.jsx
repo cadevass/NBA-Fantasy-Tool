@@ -23,6 +23,12 @@ const NOW = new Date().toLocaleDateString("en-AU", { month: "short", day: "numer
 
 export default function App() {
   const [tab, setTab] = useState("dashboard");
+  const [dynastyMode, setDynastyMode] = useState(() => localStorage.getItem("dynasty_mode") || "contending");
+  function toggleMode() {
+    const next = dynastyMode === "contending" ? "rebuilding" : "contending";
+    setDynastyMode(next);
+    localStorage.setItem("dynasty_mode", next);
+  }
 
   return (
     <div className="app-shell">
@@ -44,11 +50,19 @@ export default function App() {
           ))}
         </nav>
 
+        <button onClick={toggleMode} style={{
+          marginRight: 12, padding: "4px 12px", borderRadius: 20, border: "1px solid var(--border)",
+          background: dynastyMode === "contending" ? "var(--green-bg)" : "var(--accent-light)",
+          color: dynastyMode === "contending" ? "var(--green)" : "var(--accent-dim)",
+          fontSize: 11, fontWeight: 700, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em"
+        }}>
+          {dynastyMode === "contending" ? "🏆 Contending" : "🔄 Rebuilding"}
+        </button>
         <div className="top-bar-meta">{NOW}</div>
       </header>
 
       <main className="main-content">
-        {tab === "dashboard" && <Dashboard />}
+        {tab === "dashboard" && <Dashboard dynastyMode={dynastyMode} />}
         {tab === "bigboard" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 20, alignItems: "start" }}>
             <BigBoard />

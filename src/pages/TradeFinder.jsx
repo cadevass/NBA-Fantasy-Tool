@@ -382,6 +382,7 @@ Be specific to the interactions above. No generic advice. Dynasty fantasy contex
         targetRosterId: selectedTeam?.rosterId || null,
         pageContext: { additionalContext: otherContext },
         aiProfiles,
+        dynastyMode: localStorage.getItem('dynasty_mode') || 'contending',
       });
 
       const prompt = `Evaluate this dynasty fantasy basketball trade. Search the web for any current player news or injuries.
@@ -508,6 +509,7 @@ COUNTER_SUGGESTION: [if declining, what would make it work]`;
         targetRosterId: targetTeam?.rosterId || null,
         pageContext: { additionalContext: suggestContext },
         aiProfiles,
+        dynastyMode: localStorage.getItem('dynasty_mode') || 'contending',
       });
 
       const prompt = `You are a dynasty fantasy basketball trade analyst for a Sleeper points league (Lock-In mode).

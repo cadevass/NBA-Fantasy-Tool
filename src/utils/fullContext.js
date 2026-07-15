@@ -19,6 +19,10 @@ export function buildFullContext({
 }) {
   const sections = [];
 
+  // ── DYNASTY MODE ──
+  sections.push(`DYNASTY MODE: ${dynastyMode.toUpperCase()}
+${dynastyMode === "contending" ? "Prioritise: proven production, win-now assets, floor reliability, immediate fantasy output. Weight veterans and established contributors higher." : "Prioritise: youth, upside, draft capital, long-term ceiling. Weight age curve and development trajectory higher than current production."}`);
+
   // ── SCORING SYSTEM ──
   sections.push(`SCORING SYSTEM (Lock-In mode — think in fantasy points, not raw stats):
 pts×0.5, reb×1, ast×1, stl×2, blk×2, TO×-1, 3PM×0.5

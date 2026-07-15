@@ -109,6 +109,7 @@ export default function LockInAdvisor() {
         teams,
         targetRosterId: null,
         pageContext: {},
+        dynastyMode: localStorage.getItem('dynasty_mode') || 'contending',
       });
 
       const prompt = `Lock-In Decision for ${activeName}:
