@@ -10,7 +10,6 @@ import { getTeamContexts, setTeamContext, getTeamContext, TEAM_STATUSES } from "
 import { getNegotiationLog, saveNegotiationLog, INTERACTION_TYPES, getInteractionColor, getInteractionBg, getAiProfiles, saveAiProfiles } from "../utils/negotiationLog";
 import { dbSet, dbGet } from "../utils/supabase";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
-import MarketValueModal from "../components/MarketValueModal";
 import { buildDraftContext } from "../utils/sleeperDraft";
 import { buildFullContext } from "../utils/fullContext";
 import { getRankings } from "../utils/rankings";
@@ -247,7 +246,6 @@ export default function TradeFinder() {
   const [suggestContext, setSuggestContext] = useState("");
   const [marketValues, setMarketValues] = useState([]);
   useEffect(() => { getRankings().then(setMarketValues); }, []);
-  const [showMarketValues, setShowMarketValues] = useState(false);
   const [negLog, setNegLog] = useState([]);
   const [aiProfiles, setAiProfiles] = useState({});
   const [generatingProfile, setGeneratingProfile] = useState(null);
@@ -1301,7 +1299,6 @@ TRADE_3:
           )}
         </div>
       )}
-    {showMarketValues && <MarketValueModal onClose={() => setShowMarketValues(false)} />}
     </div>
   );
 }
