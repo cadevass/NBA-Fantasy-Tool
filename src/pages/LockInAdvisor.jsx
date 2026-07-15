@@ -31,7 +31,7 @@ export default function LockInAdvisor() {
   const { myTeam, teams, startupDraft } = useSleeperContext();
   const [marketValues, setMarketValues] = useState([]);
   const [negLog, setNegLog] = useState([]);
-  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
+  useEffect(() => { getRankings().then(setMarketValues); }, []);
   useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
   const [nbaPlayers, setNbaPlayers] = useState([]);
   useEffect(() => {

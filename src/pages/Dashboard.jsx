@@ -44,7 +44,7 @@ export default function Dashboard() {
   const [startSitResult, setStartSitResult] = useState(null);
   const [marketValues, setMarketValues] = useState([]);
   const [negLog, setNegLog] = useState([]);
-  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
+  useEffect(() => { getRankings().then(setMarketValues); }, []);
   useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
 
   const today = new Date().toLocaleDateString("en-AU", { 

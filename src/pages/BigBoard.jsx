@@ -55,7 +55,7 @@ export default function BigBoard() {
   const [marketValues, setMarketValues] = useState([]);
   const [negLog, setNegLog] = useState([]);
   const [nbaPlayers, setNbaPlayers] = useState([]);
-  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
+  useEffect(() => { getRankings().then(setMarketValues); }, []);
   useEffect(() => { getNegotiationLog().then(setNegLog); }, []);
   useEffect(() => { fetchPlayerSeasonStats().then(setNbaPlayers); }, []);
   const { value: prospects, synced: prospectsSynced, addItem: addProspect, updateItem: updateProspect, deleteItem: deleteProspectDb, replaceAll: replaceProspects } = useSupabaseArray("bb_prospects");
