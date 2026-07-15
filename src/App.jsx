@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Home } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Rankings from "./pages/Rankings";
+import Rankings from "./pages/Rankings";
 import BigBoard from "./pages/BigBoard";
 import TradeFinder from "./pages/TradeFinder";
 import LockInAdvisor from "./pages/LockInAdvisor";
@@ -14,6 +15,7 @@ const TABS = [
   { id: "bigboard", label: "Big Board" },
   { id: "trade", label: "Trade Evaluator" },
   { id: "lockin", label: "Lock-In Advisor" },
+  { id: "rankings", label: "Rankings" },
   { id: "rankings", label: "Rankings" },
   { id: "league", label: "League" },
   { id: "draft", label: "🏀 Draft Night" },
@@ -62,6 +64,7 @@ export default function App() {
           </div>
         )}
         {tab === "lockin" && <LockInAdvisor />}
+        {tab === "rankings" && <Rankings />}
         {tab === "rankings" && <Rankings />}
         {tab === "league" && <League />}
         {tab === "draft" && <DraftNight />}

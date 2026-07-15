@@ -13,7 +13,7 @@ import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import MarketValueModal from "../components/MarketValueModal";
 import { buildDraftContext } from "../utils/sleeperDraft";
 import { buildFullContext } from "../utils/fullContext";
-import { getMarketValues } from "../utils/marketValues";
+import { getRankings } from "../utils/rankings";
 
 const PICK_YEARS = ["2026", "2027", "2028"];
 const PICK_ROUNDS = ["1st", "2nd", "3rd"];
@@ -246,7 +246,7 @@ export default function TradeFinder() {
   const [targetPlayer, setTargetPlayer] = useState(null);
   const [suggestContext, setSuggestContext] = useState("");
   const [marketValues, setMarketValues] = useState([]);
-  useEffect(() => { getMarketValues().then(setMarketValues); }, []);
+  useEffect(() => { getRankings().then(setMarketValues); }, []);
   const [showMarketValues, setShowMarketValues] = useState(false);
   const [negLog, setNegLog] = useState([]);
   const [aiProfiles, setAiProfiles] = useState({});
@@ -598,7 +598,6 @@ TRADE_3:
           </div>
         </div>
         <div className="flex gap-2 items-center">
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowMarketValues(true)} style={{ fontSize: 12 }}>📊 Market Values</button>
           <button className={`tab-btn${activeTab === "evaluate" ? " active" : ""}`} onClick={() => setActiveTab("evaluate")}>Evaluate</button>
           <button className={`tab-btn${activeTab === "suggest" ? " active" : ""}`} onClick={() => setActiveTab("suggest")}>Offer Builder</button>
           <button className={`tab-btn${activeTab === "teams" ? " active" : ""}`} onClick={() => setActiveTab("teams")}>Teams</button>

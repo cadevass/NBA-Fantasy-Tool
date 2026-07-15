@@ -6,7 +6,7 @@ import { calcFantasyScore, calcSeasonAverageFP, LOCK_IN_CONTEXT } from "../utils
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { useSleeperContext } from "../context/SleeperContext";
 import { buildFullContext } from "../utils/fullContext";
-import { getMarketValues } from "../utils/marketValues";
+import { getRankings } from "../utils/rankings";
 import { getNegotiationLog } from "../utils/negotiationLog";
 import { getTeamContexts } from "../utils/teamContext";
 

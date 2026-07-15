@@ -3,6 +3,7 @@ import { buildDraftContext } from "./sleeperDraft";
 import { INTERACTION_TYPES } from "./negotiationLog";
 
 // Master context builder — feeds every AI prompt across every page
+// Rankings now powers everything — marketValues param accepts consensus_rankings data
 export function buildFullContext({
   myTeam,
   nbaPlayers,

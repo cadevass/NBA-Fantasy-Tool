@@ -6,7 +6,7 @@ import { callClaude } from "../utils/api";
 import { DYNASTY_CONTEXT, LOCK_IN_CONTEXT } from "../utils/league";
 import { useSleeperContext } from "../context/SleeperContext";
 import { buildFullContext } from "../utils/fullContext";
-import { getMarketValues } from "../utils/marketValues";
+import { getRankings } from "../utils/rankings";
 import { getNegotiationLog } from "../utils/negotiationLog";
 import { getTeamContexts } from "../utils/teamContext";
 import { fetchPlayerSeasonStats } from "../utils/nbaStats";

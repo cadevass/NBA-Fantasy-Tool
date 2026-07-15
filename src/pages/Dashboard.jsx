@@ -5,7 +5,7 @@ import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { calcSeasonAverageFP } from "../utils/league";
 import { callClaude } from "../utils/api";
 import { buildFullContext } from "../utils/fullContext";
-import { getMarketValues } from "../utils/marketValues";
+import { getRankings } from "../utils/rankings";
 import { getNegotiationLog } from "../utils/negotiationLog";
 import { getTeamContexts } from "../utils/teamContext";
 
