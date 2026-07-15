@@ -560,6 +560,7 @@ TRADE_3:
 
       console.log("calling Claude with prompt length:", prompt.length);
       const text = await callClaude([{ role: "user", content: prompt }]);
+      console.log("RESPONSE PREVIEW:", text?.slice(0, 300));
       console.log("Claude responded:", text?.length);
       setSuggestions(text);
     } catch (e) {
