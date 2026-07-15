@@ -52,13 +52,13 @@ export default function App() {
           ))}
         </nav>
 
-        <button onClick={toggleMode} style={{
+        <button id="dynasty-toggle" onClick={toggleMode} style={{
           marginRight: 12, padding: "4px 12px", borderRadius: 20, border: "1px solid var(--border)",
-          background: dynastyMode === "contending" ? "var(--green-bg)" : "var(--accent-light)",
-          color: dynastyMode === "contending" ? "var(--green)" : "var(--accent-dim)",
+          background: (localStorage.getItem("dynasty_mode") || "contending") === "contending" ? "var(--green-bg)" : "var(--accent-light)",
+          color: (localStorage.getItem("dynasty_mode") || "contending") === "contending" ? "var(--green)" : "var(--accent-dim)",
           fontSize: 11, fontWeight: 700, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em"
         }}>
-          {dynastyMode === "contending" ? "🏆 Contending" : "🔄 Rebuilding"}
+          {(localStorage.getItem("dynasty_mode") || "contending") === "contending" ? "🏆 Contending" : "🔄 Rebuilding"}
         </button>
         <div className="top-bar-meta">{NOW}</div>
       </header>
