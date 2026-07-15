@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Home } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Rankings from "./pages/Rankings";
@@ -24,11 +24,13 @@ const NOW = new Date().toLocaleDateString("en-AU", { month: "short", day: "numer
 export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [dynastyMode, setDynastyMode] = useState(() => localStorage.getItem("dynasty_mode") || "contending");
-  function toggleMode() {
-    const next = dynastyMode === "contending" ? "rebuilding" : "contending";
-    setDynastyMode(next);
-    localStorage.setItem("dynasty_mode", next);
-  }
+  const toggleMode = useCallback(() => {
+    setDynastyMode(prev => {
+      const next = prev === "contending" ? "rebuilding" : "contending";
+      localStorage.setItem("dynasty_mode", next);
+      return next;
+    });
+  }, []);
 
   return (
     <div className="app-shell">
@@ -62,7 +64,7 @@ export default function App() {
       </header>
 
       <main className="main-content">
-        {tab === "dashboard" && <Dashboard dynastyMode={dynastyMode} />}
+        {tab === "dashboard" && <Dashboard />}
         {tab === "bigboard" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 20, alignItems: "start" }}>
             <BigBoard />
