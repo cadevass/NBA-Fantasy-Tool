@@ -15,7 +15,6 @@ const TABS = [
   { id: "trade", label: "Trade Evaluator" },
   { id: "lockin", label: "Lock-In Advisor" },
   { id: "rankings", label: "Rankings" },
-  { id: "rankings", label: "Rankings" },
   { id: "league", label: "League" },
   { id: "draft", label: "🏀 Draft Night" },
 ];
@@ -63,7 +62,6 @@ export default function App() {
           </div>
         )}
         {tab === "lockin" && <LockInAdvisor />}
-        {tab === "rankings" && <Rankings />}
         {tab === "rankings" && <Rankings />}
         {tab === "league" && <League />}
         {tab === "draft" && <DraftNight />}
