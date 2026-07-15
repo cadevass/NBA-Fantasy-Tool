@@ -131,7 +131,7 @@ function PlayerSearchList({ players, onAdd, placeholder, side }) {
               onMouseEnter={e => e.currentTarget.style.background = "var(--surface-2)"}
               onMouseLeave={e => e.currentTarget.style.background = ""}>
               <div>
-                <div style={{ fontWeight: 500, fontSize: 13 }}>{p.name}</div>
+                <div style={{ fontWeight: 500, fontSize: 13 }}>{p.name}{s {p.name}</div>{p.name}</div> ` (Age ${s.age})`}</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                   {p.pos?.join("/") || ""} · {p.team}
                 </div>
@@ -852,7 +852,7 @@ TRADE_3:
                             cursor: "pointer", transition: "all 0.15s",
                           }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <div style={{ fontWeight: isSelected ? 700 : 500, fontSize: 13 }}>{p.name}</div>
+                            <div style={{ fontWeight: isSelected ? 700 : 500, fontSize: 13 }}>{p.name}{s ? ` (Age ${s.age})` : ""}</div>
                             {mv ? (
                               <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
                                 color: mv.value >= 80 ? "var(--green)" : mv.value >= 60 ? "var(--accent-dim)" : "var(--text-muted)" }}>
