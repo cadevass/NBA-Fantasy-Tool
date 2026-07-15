@@ -563,6 +563,7 @@ TRADE_3:
       console.log("Claude responded:", text?.length);
       setSuggestions(text);
     } catch (e) {
+      console.error("getSuggestions error:", e);
       setSuggestions(`Error: ${e.message}`);
     } finally {
       setSuggestLoading(false);
