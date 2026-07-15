@@ -84,7 +84,7 @@ export async function fetchPlayerSeasonStats() {
 export function findPlayer(players, name) {
   if (!players?.length || !name) return null;
   // Normalise — strip apostrophes, dots, hyphens, lowercase
-  const norm = s => s.toLowerCase().replace(/['.\-]/g, "").replace(/\s+/g, " ").trim();
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['.\-]/g, '').replace(/\s+/g, ' ').trim();
   const lower = norm(name);
   // Exact match after normalisation
   let match = players.find(p => norm(p.name) === lower);
