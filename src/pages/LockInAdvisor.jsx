@@ -54,6 +54,12 @@ export default function LockInAdvisor() {
 
   const activeName = useCustom ? customPlayer : playerName;
 
+  const fantasyScore = useMemo(() => {
+    const parsed = {};
+    for (const [k, v] of Object.entries(game)) parsed[k] = parseFloat(v) || 0;
+    return calcFantasyScore(parsed);
+  }, [game]);
+
   useEffect(() => {
     if (fantasyScore === 0 || !activeName) { setEvData(null); return; }
     const enabled = remainingGames.filter(g => g.enabled).length;
@@ -70,12 +76,6 @@ export default function LockInAdvisor() {
     }, 600);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [fantasyScore, activeName, remainingGames, matchupDelta]);
-
-  const fantasyScore = useMemo(() => {
-    const parsed = {};
-    for (const [k, v] of Object.entries(game)) parsed[k] = parseFloat(v) || 0;
-    return calcFantasyScore(parsed);
-  }, [game]);
 
   function updateStat(field, val) { setGame(g => ({ ...g, [field]: val })); }
   function getSeasonAvgFP(name) {
