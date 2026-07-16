@@ -171,6 +171,7 @@ export default function Dashboard() {
         targetRosterId: null,
         pageContext: {},
         dynastyMode: localStorage.getItem('dynasty_mode') || 'contending',
+        slices: ["dynasty_mode", "scoring", "roster"],
       });
 
       const prompt = `Start/Sit decision for The Backshot Dynasty (Sleeper Lock-In mode, AWST timezone).

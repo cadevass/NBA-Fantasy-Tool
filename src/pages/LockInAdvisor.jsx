@@ -131,6 +131,7 @@ export default function LockInAdvisor() {
         targetRosterId: null,
         pageContext: {},
         dynastyMode: localStorage.getItem('dynasty_mode') || 'contending',
+        slices: ["dynasty_mode", "scoring", "roster"],
       });
 
       const prompt = `Lock-In Decision for ${activeName}:

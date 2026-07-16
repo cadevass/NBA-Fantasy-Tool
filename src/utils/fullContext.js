@@ -2,8 +2,29 @@ import { calcSeasonAverageFP } from "./league";
 import { buildDraftContext } from "./sleeperDraft";
 import { INTERACTION_TYPES } from "./negotiationLog";
 
-// Master context builder — feeds every AI prompt across every page
-// Rankings now powers everything — marketValues param accepts consensus_rankings data
+// Available slices — each page declares only what it needs
+// ALL_SLICES is the default (backward-compatible for any call that omits slices)
+export const ALL_SLICES = [
+  "dynasty_mode",
+  "scoring",
+  "roster",
+  "market_values",
+  "trade_block",
+  "draft_context",
+  "target_team",
+  "additional_context",
+];
+
+// Per-page recommended slice sets
+export const PAGE_SLICES = {
+  dashboard:    ["dynasty_mode", "scoring", "roster"],
+  lockin:       ["dynasty_mode", "scoring", "roster"],
+  waivers:      ["dynasty_mode", "scoring", "roster", "market_values"],
+  bigboard:     ["dynasty_mode", "scoring", "roster", "market_values"],
+  trade:        ALL_SLICES,
+  rankings:     ["dynasty_mode", "scoring", "roster", "market_values"],
+};
+
 export function buildFullContext({
   myTeam,
   nbaPlayers,
@@ -17,63 +38,73 @@ export function buildFullContext({
   pageContext = {},
   aiProfiles = {},
   dynastyMode = "contending",
+  slices = ALL_SLICES, // declare what this call needs
 }) {
+  const has = s => slices.includes(s);
   const sections = [];
 
   // ── DYNASTY MODE ──
-  sections.push(`DYNASTY MODE: ${dynastyMode.toUpperCase()}
-${dynastyMode === "contending" ? "You are CONTENDING NOW. You are willing to trade picks and younger players to win immediately. Prioritise proven production, floor reliability, and immediate fantasy output. You can afford to give up future assets for proven contributors." : "You are REBUILDING. You are willing to trade proven veterans and win-now players to accumulate picks, youth, and long-term assets. Prioritise age curve, upside, and draft capital. Veterans are expendable — youth and picks are the currency."}`);
+  if (has("dynasty_mode")) {
+    sections.push(`DYNASTY MODE: ${dynastyMode.toUpperCase()}
+${dynastyMode === "contending"
+  ? "You are CONTENDING NOW. Trade picks and younger players to win immediately. Prioritise proven production, floor reliability, and immediate fantasy output."
+  : "You are REBUILDING. Trade proven veterans to accumulate picks, youth, and long-term assets. Veterans are expendable — youth and picks are the currency."}`);
+  }
 
   // ── SCORING SYSTEM ──
-  sections.push(`SCORING SYSTEM (Lock-In mode — think in fantasy points, not raw stats):
+  if (has("scoring")) {
+    sections.push(`SCORING SYSTEM (Lock-In mode):
 pts×0.5, reb×1, ast×1, stl×2, blk×2, TO×-1, 3PM×0.5
 Bonuses: DD+1, TD+2, 40pts+2, 50pts+2, 15ast+1, 20reb+1
-CRITICAL: Steals and blocks are worth 2x — defensive playmakers are premium assets in this league.`);
+CRITICAL: Steals and blocks are worth 2x — defensive playmakers are premium assets.`);
+  }
 
   // ── MY ROSTER ──
-  if (myTeam) {
+  if (has("roster") && myTeam) {
     const allPlayers = [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])];
     const rosterLines = allPlayers.map(p => {
       const stats = nbaPlayers?.find(x => x.name?.toLowerCase() === p.name?.toLowerCase());
-      const mv = marketValues.find(m => m.name.toLowerCase().replace(/[^a-z0-9 ]/g, '') === p.name.toLowerCase().replace(/[^a-z0-9 ]/g, ''));
       const avgFP = stats ? calcSeasonAverageFP(stats) : null;
       const parts = [p.name];
       if (stats) parts.push(`${stats.pts}pts/${stats.reb}reb/${stats.ast}ast/${stats.stl}stl/${stats.blk}blk Age ${stats.age}`);
       if (avgFP) parts.push(`~${avgFP} FP/game avg`);
-      if (mv) parts.push(`Market Value: ${mv.value}/100 (${mv.trend}) — ${mv.summary}`);
+      if (has("market_values")) {
+        const mv = marketValues.find(m => m.name.toLowerCase().replace(/[^a-z0-9 ]/g, '') === p.name.toLowerCase().replace(/[^a-z0-9 ]/g, ''));
+        if (mv) parts.push(`Value: ${mv.value}/100 (${mv.trend}) — ${mv.summary}`);
+      }
       return parts.join(' | ');
     });
+    sections.push(`MY ROSTER — THE BACKSHOT DYNASTY:\n${rosterLines.join("\n")}`);
+  }
 
-    sections.push(`MY ROSTER — THE BACKSHOT DYNASTY:
-${rosterLines.join("\n")}`);
-
-    // Untouchables and sell candidates derived from market values
-    const untouchables = marketValues.filter(m => m.category === "My Roster" && m.value >= 85).map(m => m.name);
-    const sellCandidates = marketValues.filter(m => m.category === "My Roster" && (m.value < 70 || m.trend === "Falling")).map(m => `${m.name} (${m.value}/100, ${m.trend})`);
-    const holds = marketValues.filter(m => m.category === "My Roster" && m.value >= 70 && m.value < 85 && m.trend !== "Falling").map(m => m.name);
-
-    sections.push(`MARKET VALUE SCALE: Values are out of 100 representing current dynasty trade market value. 90+ = elite franchise asset (very high ask required but available for the right price). 75-89 = strong asset (meaningful return needed). 60-74 = solid tradeable piece. Below 60 = declining or limited value, more moveable. NO player is completely untouchable — the right offer changes everything. Use these values to calibrate realistic trade expectations, not as hard rules.`);
+  // ── MARKET VALUE SCALE ──
+  if (has("market_values") && myTeam) {
+    const sellCandidates = marketValues
+      .filter(m => m.category === "My Roster" && (m.value < 70 || m.trend === "Falling"))
+      .map(m => `${m.name} (${m.value}/100, ${m.trend})`);
+    sections.push(`MARKET VALUE SCALE: Values out of 100. 90+ = elite franchise asset. 75-89 = strong asset. 60-74 = solid piece. Below 60 = moveable. NO player is untouchable — the right price changes everything.${sellCandidates.length ? `\nSell candidates: ${sellCandidates.join(", ")}` : ""}`);
   }
 
   // ── MY TRADE BLOCK ──
-  const myBlock = tradeBlock.filter(p => p.owner === "My Roster");
-  if (myBlock.length > 0) {
-    sections.push(`MY PLAYERS ON THE TRADE BLOCK (actively available):
-${myBlock.map(p => `${p.name}${p.notes ? ` — ${p.notes}` : ""}`).join("\n")}`);
+  if (has("trade_block")) {
+    const myBlock = tradeBlock.filter(p => p.owner === "My Roster");
+    if (myBlock.length > 0) {
+      sections.push(`MY PLAYERS ON THE TRADE BLOCK:\n${myBlock.map(p => `${p.name}${p.notes ? ` — ${p.notes}` : ""}`).join("\n")}`);
+    }
   }
 
   // ── STARTUP DRAFT CONTEXT ──
-  if (startupDraft?.length > 0 && teams?.length > 0) {
-    sections.push(`STARTUP DRAFT CONTEXT (use to gauge emotional attachment to players):
-${buildDraftContext(startupDraft, teams)}`);
+  if (has("draft_context") && startupDraft?.length > 0 && teams?.length > 0) {
+    sections.push(`STARTUP DRAFT CONTEXT (emotional attachment gauge):\n${buildDraftContext(startupDraft, teams)}`);
   }
 
   // ── TARGET TEAM CONTEXT ──
-  if (targetRosterId) {
+  if (has("target_team") && targetRosterId) {
     const targetTeam = teams.find(t => t.rosterId === targetRosterId);
     const ctx = teamContexts[targetRosterId] || {};
     const teamNeg = negLog.filter(n => n.rosterId === targetRosterId).sort((a, b) => b.id - a.id);
     const theirBlock = tradeBlock.filter(p => p.owner === "League Player" && p.team === String(targetRosterId));
+    const leagueBlock = tradeBlock.filter(p => p.owner === "League Player");
 
     if (targetTeam) {
       const rosterLines = [...targetTeam.starters, ...targetTeam.bench, ...(targetTeam.taxi || [])].map(p => {
@@ -84,12 +115,10 @@ ${buildDraftContext(startupDraft, teams)}`);
         if (mv) parts.push(`Value: ${mv.value}/100 (${mv.trend})`);
         return parts.join(' | ');
       });
-
       sections.push(`TARGET TEAM: ${targetTeam.teamName || targetTeam.username}
 Status: ${ctx.status || "unknown"}
 Scouting Notes: ${ctx.notes || "none"}
-Their Roster:
-${rosterLines.join("\n")}`);
+Their Roster:\n${rosterLines.join("\n")}`);
     }
 
     if (teamNeg.length > 0) {
@@ -101,30 +130,31 @@ ${rosterLines.join("\n")}`);
         if (n.notes) parts.push(`Notes: ${n.notes}`);
         return parts.join(" | ");
       });
-
-      sections.push(`NEGOTIATION HISTORY WITH THIS MANAGER (critical — use to calibrate all offers):
+      const declined = teamNeg.filter(n => n.type === "declined").length;
+      const accepted = teamNeg.filter(n => n.type === "accepted" || n.type === "completed").length;
+      const countered = teamNeg.filter(n => n.type === "countered").length;
+      sections.push(`NEGOTIATION HISTORY (calibrate all offers):
 ${negLines.join("\n")}
-
-PATTERN: ${teamNeg.filter(n => n.type === "declined").length} declined, ${teamNeg.filter(n => n.type === "accepted" || n.type === "completed").length} accepted, ${teamNeg.filter(n => n.type === "countered").length} countered${teamNeg.filter(n => n.type === "declined").length >= 2 ? " — this manager tends to decline, raise your offers" : ""}${teamNeg.filter(n => n.type === "accepted").length >= 2 ? " — this manager tends to accept, push harder" : ""}`);
+PATTERN: ${declined} declined, ${accepted} accepted, ${countered} countered${declined >= 2 ? " — tends to decline, raise your offers" : ""}${accepted >= 2 ? " — tends to accept, push harder" : ""}`);
     }
 
     if (theirBlock.length > 0) {
-      sections.push(`THEIR PLAYERS ON THE TRADE BLOCK (confirmed available):
-${theirBlock.map(p => `${p.name}${p.notes ? ` — ${p.notes}` : ""}`).join("\n")}`);
+      sections.push(`THEIR TRADE BLOCK:\n${theirBlock.map(p => `${p.name}${p.notes ? ` — ${p.notes}` : ""}`).join("\n")}`);
     }
 
-    // League trade block (all managers)
-    const leagueBlock = tradeBlock.filter(p => p.owner === "League Player");
     if (leagueBlock.length > 0) {
-      sections.push(`LEAGUE TRADE BLOCK (players confirmed available across all teams):
-${leagueBlock.map(p => `${p.name} (${p.team || "unknown owner"})${p.notes ? ` — ${p.notes}` : ""}`).join("\n")}`);
+      sections.push(`LEAGUE TRADE BLOCK:\n${leagueBlock.map(p => `${p.name} (${p.team || "unknown"})${p.notes ? ` — ${p.notes}` : ""}`).join("\n")}`);
+    }
+
+    // AI behavioural profile
+    if (aiProfiles[targetRosterId]) {
+      sections.push(`AI BEHAVIOURAL PROFILE FOR THIS MANAGER:\n${aiProfiles[targetRosterId]}`);
     }
   }
 
   // ── PAGE-SPECIFIC CONTEXT ──
-  if (pageContext.additionalContext) {
-    sections.push(`ADDITIONAL INTEL (treat as hard facts — highest priority):
-${pageContext.additionalContext}`);
+  if (has("additional_context") && pageContext.additionalContext) {
+    sections.push(`ADDITIONAL INTEL (treat as hard facts — highest priority):\n${pageContext.additionalContext}`);
   }
 
   return sections.join("\n\n═══════════════════════════════\n\n");
