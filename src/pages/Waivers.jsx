@@ -120,7 +120,8 @@ export default function Waivers() {
           <div className="font-semibold" style={{ fontSize: 16 }}>Waiver Wire Scanner</div>
           <div className="text-sm text-muted mt-1">
             {scan ? <>Last scan {new Date(scan.ranAt).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-              {!scan.gameLogsActive && " · 📈🔥⚡ signals activate when the season starts"}</> : "No scan yet"}
+              {!scan.gameLogsActive && " · 📈🔥⚡ signals activate when the season starts"}
+              {scan.debug && ` · API:${scan.debug.statsApiPlayers} FA:${scan.debug.freeAgents} Feed:${scan.debug.aboveFloor}`}</> : "No scan yet"}
           </div>
         </div>
         <button className="btn btn-accent btn-sm" onClick={doScan} disabled={scanning}>

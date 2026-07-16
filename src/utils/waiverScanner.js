@@ -195,7 +195,8 @@ export async function runScan({ nbaPlayers, teams, sleeperPlayers }) {
     };
   });
 
-  const scan = { ranAt: new Date().toISOString(), gameLogsActive: !!glSignals, results };
+  const scan = { ranAt: new Date().toISOString(), gameLogsActive: !!glSignals, results,
+    debug: { statsApiPlayers: (nbaPlayers || []).length, freeAgents: fas.length, aboveFloor: results.length } };
   localStorage.setItem(SCAN_KEY, JSON.stringify(scan));
   dbSet("app_settings", SCAN_KEY, scan);
   return scan;
