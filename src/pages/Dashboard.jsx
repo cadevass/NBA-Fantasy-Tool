@@ -269,90 +269,78 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
           {sortedActive.map(p => {
             const mq = p.game ? getMatchupQuality(p.game.opponent) : null;
+            const nbaId = getNbaId(p.name);
+            const lock = lockStates[p.name] || { state: "unlocked" };
+            const gamesLeft = 1;
+            const isLocked = lock.state === "locked";
+            const isWarning = !isLocked && gamesLeft === 1;
             return (
-              {(() => {
-                const nbaId = getNbaId(p.name);
-                const lock = lockStates[p.name] || { state: "unlocked" };
-                const gamesLeft = 1; // static until matchup endpoint active in October
-                const isLocked = lock.state === "locked";
-                const isWarning = !isLocked && gamesLeft === 1;
-                return (
-                  <div key={p.name} className="card" style={{ padding: 0, overflow: "hidden" }}>
-                    {/* Headshot + info row */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "12px 14px 10px" }}>
-                      {/* Headshot */}
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "var(--surface-2)", border: "1px solid var(--border)", flexShrink: 0, marginRight: 10 }}>
-                        {nbaId ? (
-                          <img
-                            src={`https://cdn.nba.com/headshots/nba/latest/260x190/${nbaId}.png`}
-                            alt={p.name}
-                            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-                            onError={e => {
-                              e.target.style.display = "none";
-                              e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--text-muted)">${p.name.split(" ").map(w=>w[0]).join("").slice(0,2)}</div>`;
-                            }}
-                          />
-                        ) : (
-                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--text-muted)" }}>
-                            {p.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                          </div>
-                        )}
-                      </div>
-                      {/* Name + meta */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.2 }}>{p.name}</div>
-                          {mq && (
-                            <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 20, background: mq.bg, color: mq.color, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0, marginLeft: 4 }}>{mq.label}</span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                          {p.pos?.join("/")} · {p.team}
-                          {p.game && <span> · vs {p.game.opponent} · {p.game.time}</span>}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Season avg FP */}
-                    {p.seasonAvgFP && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 14px 10px", background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "5px 10px" }}>
-                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Season Avg</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 15, marginLeft: "auto" }}>{p.seasonAvgFP} FP</span>
+              <div key={p.name} className="card" style={{ padding: 0, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", padding: "12px 14px 10px" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "var(--surface-2)", border: "1px solid var(--border)", flexShrink: 0, marginRight: 10 }}>
+                    {nbaId ? (
+                      <img
+                        src={`https://cdn.nba.com/headshots/nba/latest/260x190/${nbaId}.png`}
+                        alt={p.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                        onError={e => {
+                          e.target.style.display = "none";
+                          e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--text-muted)">${p.name.split(" ").map(w=>w[0]).join("").slice(0,2)}</div>`;
+                        }}
+                      />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--text-muted)" }}>
+                        {p.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
                       </div>
                     )}
-                    {/* Lock status strip */}
-                    <div
-                      onClick={() => cycleLock(p.name, gamesLeft)}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "7px 14px", cursor: "pointer",
-                        background: isLocked ? "var(--green-bg)" : isWarning ? "var(--red-bg)" : "var(--surface-2)",
-                        borderTop: "1px solid var(--border)",
-                      }}
-                    >
-                      <span style={{ fontSize: 11, fontWeight: 700, color: isLocked ? "var(--green)" : isWarning ? "var(--red)" : "var(--text-muted)", letterSpacing: "0.03em" }}>
-                        {isLocked ? "🔒 LOCKED" : isWarning ? "⚠️ LAST GAME" : "⏳ UNLOCKED"}
-                      </span>
-                      {isLocked && (
-                        <input
-                          type="number"
-                          placeholder="FP"
-                          value={lock.fp || ""}
-                          onClick={e => e.stopPropagation()}
-                          onChange={e => setLockedFP(p.name, e.target.value)}
-                          style={{ width: 52, fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13, border: "none", background: "transparent", color: "var(--green)", textAlign: "right", outline: "none" }}
-                        />
-                      )}
-                      {!isLocked && (
-                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{gamesLeft}g left · tap to lock</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.2 }}>{p.name}</div>
+                      {mq && (
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 20, background: mq.bg, color: mq.color, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0, marginLeft: 4 }}>{mq.label}</span>
                       )}
                     </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                      {p.pos?.join("/")} · {p.team}
+                      {p.game && <span> · vs {p.game.opponent} · {p.game.time}</span>}
+                    </div>
                   </div>
-                );
-              })()}
+                </div>
+                {p.seasonAvgFP && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 14px 10px", background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "5px 10px" }}>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Season Avg</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 15, marginLeft: "auto" }}>{p.seasonAvgFP} FP</span>
+                  </div>
+                )}
+                <div
+                  onClick={() => cycleLock(p.name, gamesLeft)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "7px 14px", cursor: "pointer",
+                    background: isLocked ? "var(--green-bg)" : isWarning ? "var(--red-bg)" : "var(--surface-2)",
+                    borderTop: "1px solid var(--border)",
+                  }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 700, color: isLocked ? "var(--green)" : isWarning ? "var(--red)" : "var(--text-muted)", letterSpacing: "0.03em" }}>
+                    {isLocked ? "🔒 LOCKED" : isWarning ? "⚠️ LAST GAME" : "⏳ UNLOCKED"}
+                  </span>
+                  {isLocked ? (
+                    <input
+                      type="number"
+                      placeholder="FP"
+                      value={lock.fp || ""}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => setLockedFP(p.name, e.target.value)}
+                      style={{ width: 52, fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13, border: "none", background: "transparent", color: "var(--green)", textAlign: "right", outline: "none" }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{gamesLeft}g left · tap to lock</span>
+                  )}
+                </div>
+              </div>
             );
-          })}
-        </div>
-      )}
+          })}      )}
 
       {/* Start/Sit Modal */}
       {showStartSit && (
