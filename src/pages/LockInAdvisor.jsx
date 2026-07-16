@@ -49,29 +49,8 @@ export default function LockInAdvisor() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("advisor");
-  const [evData, setEvData] = useState(null);
-  const [evLoading, setEvLoading] = useState(false);
-  const [matchupDelta, setMatchupDelta] = useState(0); // + = leading, - = trailing
 
   const activeName = useCustom ? customPlayer : playerName;
-
-  // Recompute EV whenever score or remaining games change (debounced via useEffect)
-  useEffect(() => {
-    if (fantasyScore === 0 || !activeName) { setEvData(null); return; }
-    const enabled = remainingGames.filter(g => g.enabled).length;
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      setEvLoading(true);
-      try {
-        const { computeEV } = await import("../utils/evEngine");
-        const result = await computeEV(activeName, fantasyScore, enabled, matchupDelta);
-        if (!cancelled) { setEvData(result); setEvLoading(false); }
-      } catch (e) {
-        if (!cancelled) { setEvData({ available: false, reason: e.message }); setEvLoading(false); }
-      }
-    }, 600);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [fantasyScore, activeName, remainingGames, matchupDelta]);
 
   const fantasyScore = useMemo(() => {
     const parsed = {};
@@ -133,10 +112,6 @@ export default function LockInAdvisor() {
         dynastyMode: localStorage.getItem('dynasty_mode') || 'contending',
       });
 
-      const evStr = evData?.available
-  ? `EV ENGINE: P(beat ${fantasyScore} in ${evData.remainingGames} game${evData.remainingGames > 1 ? "s" : ""}) = ${evData.prob}% | EV of waiting = ${evData.ev} FP | Math verdict = ${evData.mathVerdict} | Player mean = ${evData.mean} FP | Boom rate (35+ FP) = ${evData.boomRate}%${evData.dnpRate > 0 ? ` | DNP risk = ${evData.dnpRate}%` : ""}`
-  : "";
-
       const prompt = `Lock-In Decision for ${activeName}:
 
 COMPLETED GAME: ${game.pts}pts / ${game.reb}reb / ${game.ast}ast / ${game.stl}stl / ${game.blk}blk / ${game.to}TO / ${game.threesMade} 3PM
@@ -144,7 +119,6 @@ TONIGHT'S FANTASY SCORE: ${fantasyScore} FP
 SEASON AVERAGE FANTASY SCORE: ${seasonAvgFP ? seasonAvgFP + " FP" : "Unknown"} (calculated using this league's exact scoring system)
 DELTA: ${deltaStr}
 REMAINING GAMES THIS WEEK: ${remainingStr}
-${evStr}
 INJURY STATUS: ${injuryStatus}
 CONTEXT: ${extraContext || "None"}
 
@@ -272,62 +246,6 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
                 </div>
               </div>
             </div>
-
-            {/* EV Engine Panel */}
-            {(evLoading || evData) && (
-              <div className="card">
-                <div className="card-header">
-                  <span className="card-title">EV Analysis</span>
-                  {evData?.mathVerdict && (
-                    <div style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 800, letterSpacing: "0.05em",
-                      background: evData.mathVerdict === "LOCK" ? "var(--green-bg)" : "var(--accent-light)",
-                      color: evData.mathVerdict === "LOCK" ? "var(--green)" : "var(--accent-dim)" }}>
-                      {evData.mathVerdict === "LOCK" ? "🔒 LOCK" : "⏳ HOLD"}
-                    </div>
-                  )}
-                </div>
-                <div className="card-body">
-                  {evLoading && <div className="text-sm text-muted">Computing distribution...</div>}
-                  {evData && !evData.available && <div className="text-sm text-muted">{evData.reason}</div>}
-                  {evData?.available && (
-                    <>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
-                        {[
-                          { label: "P(Beat)", value: `${evData.prob}%`, color: evData.prob < 25 ? "var(--green)" : evData.prob > 55 ? "var(--red)" : "var(--accent)" },
-                          { label: "EV Wait", value: `${evData.ev}`, color: evData.evGain > 0 ? "var(--red)" : "var(--green)" },
-                          { label: "EV Gain", value: `${evData.evGain > 0 ? "+" : ""}${evData.evGain}`, color: evData.evGain > 0 ? "var(--red)" : "var(--green)" },
-                          { label: "Boom Rate", value: `${evData.boomRate}%`, color: "var(--text-primary)" },
-                        ].map(s => (
-                          <div key={s.label} className="stat-cell" style={{ padding: "10px", textAlign: "center" }}>
-                            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, color: s.color }}>{s.value}</div>
-                            <div className="stat-cell-lbl">{s.label}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)", marginBottom: 8 }}>
-                        From {evData.games} games · Mean {evData.mean} · P75 {evData.p75} · P90 {evData.p90}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span className="text-xs text-muted">Matchup:</span>
-                        <select className="select" style={{ flex: 1, fontSize: 12 }}
-                          value={matchupDelta > 20 ? "leading" : matchupDelta < -20 ? "trailing" : "close"}
-                          onChange={e => setMatchupDelta(e.target.value === "leading" ? 40 : e.target.value === "trailing" ? -40 : 0)}>
-                          <option value="close">Close matchup</option>
-                          <option value="leading">Leading (+20 FP)</option>
-                          <option value="trailing">Trailing (-20 FP)</option>
-                        </select>
-                        {evData.dnpRate > 0 && <span style={{ fontSize: 11, color: "var(--red)", fontFamily: "var(--font-mono)" }}>⚠️ {evData.dnpRate}% DNP risk</span>}
-                      </div>
-                      <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
-                        {evData.mathVerdict === "LOCK"
-                          ? `EV of waiting (${evData.ev} FP) is ${Math.abs(evData.evGain)} below your locked score — lock it.`
-                          : `EV of waiting (${evData.ev} FP) beats your locked score by ${evData.evGain} — let it ride.`}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
 
             <div className="flex gap-2">
               <button className="btn btn-ghost" onClick={reset}><RefreshCw size={13} /> Reset</button>
