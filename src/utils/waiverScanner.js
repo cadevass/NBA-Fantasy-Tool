@@ -21,20 +21,36 @@ export function normName(n) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// Fallback identity: first initial + last name + NBA team
+function looseKey(name, team) {
+  const parts = normName(name).split(" ").filter(Boolean);
+  if (parts.length < 2) return null;
+  return `${parts[0][0]}.${parts[parts.length - 1]}.${String(team || "").toUpperCase()}`;
 }
 
 // ── Free agent identification ──
 // nbaPlayers: array from NBA stats API. teams: SleeperContext teams array.
 export function identifyFreeAgents(nbaPlayers, teams) {
   const rostered = new Set();
+  const rosteredLoose = new Set();
   for (const t of teams || []) {
     for (const p of [...t.starters, ...t.bench, ...(t.taxi || []), ...(t.reserve || [])]) {
       rostered.add(normName(p.name));
+      const lk = looseKey(p.name, p.team);
+      if (lk) rosteredLoose.add(lk);
     }
   }
-  return (nbaPlayers || []).filter(p => !rostered.has(normName(p.name)));
+  return (nbaPlayers || []).filter(p => {
+    if (rostered.has(normName(p.name))) return false;
+    const lk = looseKey(p.name, p.team);
+    if (lk && rosteredLoose.has(lk)) return false;
+    return true;
+  });
 }
 
 // ── Game log signals (null until game_logs has data) ──
