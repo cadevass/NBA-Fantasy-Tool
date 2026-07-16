@@ -197,7 +197,7 @@ export async function runScan({ nbaPlayers, teams, sleeperPlayers }) {
 
   const scan = { ranAt: new Date().toISOString(), gameLogsActive: !!glSignals, results,
     debug: { statsApiPlayers: (nbaPlayers || []).length, freeAgents: fas.length, aboveFloor: results.length } };
-  localStorage.setItem(SCAN_KEY, JSON.stringify(scan));
+  try { localStorage.setItem(SCAN_KEY, JSON.stringify(scan)); } catch (e) { console.warn("scan cache write failed", e); }
   dbSet("app_settings", SCAN_KEY, scan);
   return scan;
 }
@@ -213,13 +213,13 @@ export function getDismissed() {
 export function dismissPlayer(name, score) {
   const d = getDismissed();
   d[normName(name)] = { name, scoreAtDismissal: score, at: new Date().toISOString() };
-  localStorage.setItem(DISMISS_KEY, JSON.stringify(d));
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify(d)); } catch {}
   dbSet("app_settings", DISMISS_KEY, d);
 }
 export function undismissPlayer(name) {
   const d = getDismissed();
   delete d[normName(name)];
-  localStorage.setItem(DISMISS_KEY, JSON.stringify(d));
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify(d)); } catch {}
   dbSet("app_settings", DISMISS_KEY, d);
 }
 // visible if never dismissed, or score jumped 10+ since dismissal (resurface)
@@ -238,7 +238,7 @@ export function toggleWatch(name, note = "") {
   const key = normName(name);
   if (w[key]) delete w[key];
   else w[key] = { name, note, at: new Date().toISOString() };
-  localStorage.setItem(WATCH_KEY, JSON.stringify(w));
+  try { localStorage.setItem(WATCH_KEY, JSON.stringify(w)); } catch {}
   dbSet("app_settings", WATCH_KEY, w);
   return w;
 }

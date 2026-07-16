@@ -23,9 +23,24 @@ async function fetchPlayers() {
   }
 
   const res = await fetch(`${SLEEPER_BASE}/players/nba`);
-  const players = await res.json();
-  localStorage.setItem(PLAYERS_CACHE_KEY, JSON.stringify(players));
-  localStorage.setItem(PLAYERS_CACHE_DATE_KEY, today);
+  const raw = await res.json();
+  // Trim to only the fields the app uses — full blob (~5MB) blows mobile localStorage quota
+  const players = {};
+  for (const [id, p] of Object.entries(raw)) {
+    players[id] = {
+      first_name: p.first_name,
+      last_name: p.last_name,
+      fantasy_positions: p.fantasy_positions,
+      team: p.team,
+      status: p.status,
+    };
+  }
+  try {
+    localStorage.setItem(PLAYERS_CACHE_KEY, JSON.stringify(players));
+    localStorage.setItem(PLAYERS_CACHE_DATE_KEY, today);
+  } catch (e) {
+    console.warn("players cache write failed", e);
+  }
   return players;
 }
 
