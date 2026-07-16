@@ -266,7 +266,7 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
           <div className="text-sm mt-2">Rest day or offseason — check back when the season starts</div>
         </div></div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, alignItems: "stretch" }}>
           {sortedActive.map(p => {
             const mq = p.game ? getMatchupQuality(p.game.opponent) : null;
             const nbaId = getNbaId(p.name);
@@ -275,8 +275,8 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
             const isLocked = lock.state === "locked";
             const isWarning = !isLocked && gamesLeft === 1;
             return (
-              <div key={p.name} className="card" style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", padding: "12px 14px 10px" }}>
+              <div key={p.name} className="card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column" }}><div style={{ display: "flex", alignItems: "flex-start", padding: "12px 14px 10px" }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "var(--surface-2)", border: "1px solid var(--border)", flexShrink: 0, marginRight: 10 }}>
                     {nbaId ? (
                       <img
@@ -310,6 +310,7 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
                 <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 14px 10px", background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "5px 10px" }}>
                   <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Season Avg</span>
                   <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 15, marginLeft: "auto" }}>{p.seasonAvgFP ? `${p.seasonAvgFP} FP` : "—"}</span>
+                </div>
                 </div>
                 <div
                   onClick={() => cycleLock(p.name, gamesLeft)}
