@@ -86,36 +86,6 @@ export function calcSeasonAverageFP(stats) {
   return Math.round(total * 10) / 10;
 }
 
-export const MY_ROSTER = {
-  starters: [
-    { name: "Cade Cunningham", pos: ["PG"], team: "DET", note: "Franchise cornerstone" },
-    { name: "Dejounte Murray", pos: ["SG"], team: "NOP" },
-    { name: "De'Aaron Fox", pos: ["PG", "SG"], team: "SAS", note: "Pillar" },
-    { name: "Jalen Johnson", pos: ["SF", "PF"], team: "ATL", note: "Untouchable" },
-    { name: "Franz Wagner", pos: ["PF", "SF"], team: "ORL" },
-    { name: "Kel'el Ware", pos: ["C", "PF"], team: "MIA" },
-    { name: "Alex Sarr", pos: ["C"], team: "WAS", note: "Future anchor" },
-    { name: "Scoot Henderson", pos: ["PG"], team: "POR" },
-    { name: "Donovan Clingan", pos: ["C"], team: "POR", note: "Young big future" },
-  ],
-  bench: [
-    { name: "Jaden Ivey", pos: ["SG", "PG"], team: "FA", note: "Drop candidate — waived by CHI March 30 2026, knee injury, no team" },
-    { name: "GG Jackson", pos: ["SF", "PF"], team: "MEM" },
-    { name: "Jonathan Kuminga", pos: ["PF"], team: "ATL" },
-    { name: "Peyton Watson", pos: ["SF", "PF"], team: "DEN" },
-  ],
-  taxi: [
-    { name: "Tre Johnson", pos: ["SG", "PG"], team: "WAS" },
-    { name: "C. Murray-Boyles", pos: ["C", "PF"], team: "TOR" },
-    { name: "Kasparas Jakučionis", pos: ["PG", "SG"], team: "MIA" },
-  ],
-  draftCapital: [
-    "2026 1st (1.08)", "2026 2nd (2.08)", "2026 3rd (3.08)",
-    "2027 1st", "2027 2nd", "2027 3rd",
-    "2028 1st", "2028 2nd", "2028 3rd",
-  ],
-};
-
 export const LOCK_IN_CONTEXT = `
 LOCK-IN MODE STRATEGY CONTEXT:
 - Only ONE game per week per player counts. You choose to lock it in after it completes, or let Sleeper default to their final game.
@@ -129,13 +99,11 @@ LOCK-IN MODE STRATEGY CONTEXT:
 
 export const DYNASTY_CONTEXT = `
 MY DYNASTY SITUATION:
-- Young core with a 2-3 year dynasty window opening.
-- Pillars: Cade Cunningham (PG, DET), De'Aaron Fox (PG/SG, SAS), Jalen Johnson (SF/PF, ATL — untouchable).
-- Future bigs: Alex Sarr (C, WAS), Donovan Clingan (C, POR), Kel'el Ware (C/PF, MIA).
-- Drop candidate: Jaden Ivey — free agent, knee injury, no team, dynasty value in freefall.
-- Rich in draft capital: 1st/2nd/3rd in 2026, 2027, 2028.
-- 2026 rookie draft picks: 1.08, 2.03, 3.08 (linear draft, pick 8th every round).
-- Need SG depth and high-ceiling SF/PF to complement the core.
+- Core four: Cade Cunningham (PG), Jalen Johnson (PF), Alex Sarr (C), Kel'el Ware (C). Dynasty window opens 2027-28.
+- Strategic mission: acquire one more T1 asset — a 22-25yo ascending SG/SF with 40-point Lock-In ceiling — before the window opens.
+- NO player is untouchable. Values are a spectrum — the right price changes everything.
+- Rich in draft capital: 1st/2nd/3rd in 2026 (1.08/2.08/3.08), 2027, and 2028. This league is player-sticky — lead offers with proven players, use picks as sweeteners.
+- My live roster, current values, trends, and dynasty mode are supplied in the context below — ALWAYS use those over static assumptions.
 `;
 
 export const AI_SYSTEM_PROMPT = `You are an expert NBA fantasy basketball analyst for a dynasty league called "The Backshot Dynasty" on Sleeper.

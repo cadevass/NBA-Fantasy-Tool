@@ -70,6 +70,7 @@ export async function fetchPlayerSeasonStats() {
         blk: Math.round(primary.blocks / g * 10) / 10,
         to: Math.round(primary.turnovers / g * 10) / 10,
         threesMade: Math.round(primary.threeFg / g * 10) / 10,
+        minutes: Math.round(primary.minutesPg / g * 10) / 10,
       };
     });
 

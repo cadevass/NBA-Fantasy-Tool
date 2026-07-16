@@ -7,6 +7,7 @@ import TradeFinder from "./pages/TradeFinder";
 import LockInAdvisor from "./pages/LockInAdvisor";
 import League from "./pages/League";
 import DraftNight from "./pages/DraftNight";
+import Waivers from "./pages/Waivers";
 import RosterPanel from "./components/RosterPanel";
 
 const TABS = [
@@ -16,6 +17,7 @@ const TABS = [
   { id: "lockin", label: "Lock-In Advisor" },
   { id: "rankings", label: "Rankings" },
   { id: "league", label: "League" },
+  { id: "waivers", label: "Waivers" },
   { id: "draft", label: "🏀 Draft Night" },
 ];
 
@@ -80,6 +82,7 @@ export default function App() {
         {tab === "lockin" && <LockInAdvisor />}
         {tab === "rankings" && <Rankings />}
         {tab === "league" && <League />}
+        {tab === "waivers" && <Waivers />}
         {tab === "draft" && <DraftNight />}
       </main>
     </div>
