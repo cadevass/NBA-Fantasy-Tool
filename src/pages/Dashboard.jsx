@@ -340,7 +340,9 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
                 </div>
               </div>
             );
-          })}      )}
+          })}
+        </div>
+      )}
 
       {/* Start/Sit Modal */}
       {showStartSit && (
