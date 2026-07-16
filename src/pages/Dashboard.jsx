@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [activePlayers, setActivePlayers] = useState([]);
   const [nbaPlayers, setNbaPlayers] = useState([]);
   const [loadingSchedule, setLoadingSchedule] = useState(true);
+  const [espnIdMap, setEspnIdMap] = useState({});
   const [showStartSit, setShowStartSit] = useState(false);
   const [playerA, setPlayerA] = useState("");
   const [playerB, setPlayerB] = useState("");
@@ -67,6 +68,23 @@ export default function Dashboard() {
         const data = await res.json();
         const games = data.events || [];
         setTodaysGames(games);
+
+        // Build name→NBA CDN ID map from ESPN athlete data
+        const idMap = {};
+        await Promise.all(games.slice(0, 6).map(async e => {
+          try {
+            const sumRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=${e.id}`);
+            if (!sumRes.ok) return;
+            const sum = await sumRes.json();
+            for (const teamBox of sum.boxscore?.players || []) {
+              for (const athlete of teamBox.statistics?.[0]?.athletes || []) {
+                const a = athlete.athlete;
+                if (a?.displayName && a?.id) idMap[a.displayName] = a.id;
+              }
+            }
+          } catch {}
+        }));
+        setEspnIdMap(idMap);
 
         if (!myTeam) return;
         const allPlayers = [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])];
@@ -202,31 +220,8 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
     }
   }
 
-  // Static NBA CDN IDs for current roster — update when roster changes
-  const NBA_IDS = {
-    "Cade Cunningham": 1630595,
-    "Jalen Johnson": 1630552,
-    "Dejounte Murray": 1627749,
-    "De'Aaron Fox": 1628368,
-    "Alex Sarr": 1642259,
-    "Kel'el Ware": 1642276,
-    "Franz Wagner": 1630532,
-    "Payton Pritchard": 1630202,
-    "Michael Porter": 1629008,
-    "Peyton Watson": 1631212,
-    "Bennedict Mathurin": 1631097,
-    "Scoot Henderson": 1630703,
-    "Donovan Clingan": 1642270,
-    "Collin Murray-Boyles": 1642867,
-    "Kasparas Jakučionis": 1642857,
-  };
-
   function getNbaId(playerName) {
-    // Exact match first, then partial last-name match
-    if (NBA_IDS[playerName]) return NBA_IDS[playerName];
-    const lastName = playerName.split(" ").slice(-1)[0].toLowerCase();
-    const match = Object.entries(NBA_IDS).find(([k]) => k.toLowerCase().includes(lastName));
-    return match?.[1] || null;
+    return espnIdMap[playerName] || null;
   }
 
   function cycleLock(name, gamesLeft) {
