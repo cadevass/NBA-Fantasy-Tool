@@ -6,7 +6,6 @@ import { calcFantasyScore, calcSeasonAverageFP, LOCK_IN_CONTEXT } from "../utils
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { useSleeperContext } from "../context/SleeperContext";
 import { buildFullContext } from "../utils/fullContext";
-import { computeEV } from "../utils/evEngine";
 import { getRankings } from "../utils/rankings";
 import { getNegotiationLog } from "../utils/negotiationLog";
 import { getTeamContexts } from "../utils/teamContext";
@@ -63,8 +62,13 @@ export default function LockInAdvisor() {
     let cancelled = false;
     const timer = setTimeout(async () => {
       setEvLoading(true);
-      const result = await computeEV(activeName, fantasyScore, enabled, matchupDelta);
-      if (!cancelled) { setEvData(result); setEvLoading(false); }
+      try {
+        const { computeEV } = await import("../utils/evEngine");
+        const result = await computeEV(activeName, fantasyScore, enabled, matchupDelta);
+        if (!cancelled) { setEvData(result); setEvLoading(false); }
+      } catch (e) {
+        if (!cancelled) { setEvData({ available: false, reason: e.message }); setEvLoading(false); }
+      }
     }, 600);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [fantasyScore, activeName, remainingGames, matchupDelta]);
