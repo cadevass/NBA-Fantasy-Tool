@@ -10,8 +10,17 @@ import { callClaude } from "../utils/api";
 import { getRankings } from "../utils/rankings";
 import { weakestRosterPlayers } from "../utils/waiverScanner";
 
-function Badge({ children }) {
-  return <span style={{ marginRight: 3 }}>{children}</span>;
+function Badge({ b }) {
+  if (b.kind === "emoji") return <span style={{ marginRight: 3, fontSize: 13 }}>{b.label}</span>;
+  return (
+    <span style={{
+      display: "inline-block", background: "var(--surface-2)",
+      border: "1px solid var(--border)", borderRadius: 3,
+      padding: "1px 5px", fontSize: 9, fontWeight: 700,
+      color: "var(--text-secondary)", fontFamily: "var(--font-mono)",
+      letterSpacing: "0.05em", marginRight: 3,
+    }}>{b.label}</span>
+  );
 }
 
 function ScoreBar({ score }) {
@@ -91,7 +100,7 @@ function FACard({ r, watched, onDismiss, onWatch, expanded, onToggle, onVerdict,
             {r.position} · {r.team} · Age {r.age} · {r.pts}p/{r.reb}r/{r.ast}a/{r.stl}s/{r.blk}b · {r.minutes} mpg
           </div>
         </div>
-        <div style={{ fontSize: 14 }}>{r.badges.map((b, i) => <Badge key={i}>{b}</Badge>)}</div>
+        <div style={{ display: "flex", alignItems: "center" }}>{r.badges.map((b, i) => <Badge key={i} b={b} />)}</div>
         <ScoreBar score={r.score} />
       </div>
 
@@ -219,7 +228,7 @@ export default function Waivers() {
       </div>
 
       <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>
-        📈 Minutes spike · 🔥 FP rising · ⚡ Per-min monster · 🛡️ Stocks · 🌊 Trending
+        📈 Minutes spike · 🔥 FP rising · P/M per-min monster · STK stocks · TRND trending
       </div>
 
       {results.map(r => (

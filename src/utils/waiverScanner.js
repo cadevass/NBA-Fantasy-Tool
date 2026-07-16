@@ -167,11 +167,11 @@ export function scoreFA(fa, ctx) {
   const score = +(base + stocks + minutesPts + fpDivPts + permPts + trendPts).toFixed(1);
 
   const badges = [];
-  if (minutesPts > 0) badges.push("📈");
-  if (fpDivPts > 0) badges.push("🔥");
-  if (permPts > 0) badges.push("⚡");
-  if (stocksFP >= 2.5) badges.push("🛡️");
-  if (trendPts > 0) badges.push("🌊");
+  if (minutesPts > 0) badges.push({ kind: "emoji", label: "📈" });
+  if (fpDivPts > 0) badges.push({ kind: "emoji", label: "🔥" });
+  if (permPts > 0) badges.push({ kind: "chip", label: "P/M" });
+  if (stocksFP >= 2.5) badges.push({ kind: "chip", label: "STK" });
+  if (trendPts > 0) badges.push({ kind: "chip", label: "TRND" });
 
   return { score, components, badges, seasonFP, gl: gl || null, trendCount };
 }
@@ -184,7 +184,8 @@ export async function runScan({ nbaPlayers, teams, sleeperPlayers }) {
     fetchTrending(sleeperPlayers),
   ]);
 
-  const prev = getLastScan();
+  const prevRaw = getLastScan();
+  const prev = prevRaw?.results?.length > 0 ? prevRaw : null; // never baseline against a failed/empty scan
   const prevRanks = {};
   (prev?.results || []).forEach((r, i) => { prevRanks[normName(r.name)] = i; });
 
