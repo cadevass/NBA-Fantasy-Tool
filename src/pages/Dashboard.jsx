@@ -276,8 +276,8 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
             const isWarning = !isLocked && gamesLeft === 1;
             return (
               <div key={p.name} className="card" style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", padding: "12px 14px 10px" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "var(--surface-2)", border: "1px solid var(--border)", flexShrink: 0, marginRight: 10 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", padding: "12px 14px 10px" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "var(--surface-2)", border: "1px solid var(--border)", flexShrink: 0, marginRight: 10 }}>
                     {nbaId ? (
                       <img
                         src={`https://cdn.nba.com/headshots/nba/latest/260x190/${nbaId}.png`}
