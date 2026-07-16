@@ -10,16 +10,27 @@ import DraftNight from "./pages/DraftNight";
 import Waivers from "./pages/Waivers";
 import RosterPanel from "./components/RosterPanel";
 
-const TABS = [
-  { id: "dashboard", label: null, icon: true },
-  { id: "bigboard", label: "Big Board" },
-  { id: "trade", label: "Trade Evaluator" },
-  { id: "lockin", label: "Lock-In Advisor" },
-  { id: "rankings", label: "Rankings" },
-  { id: "league", label: "League" },
-  { id: "waivers", label: "Waivers" },
-  { id: "draft", label: "🏀 Draft Night" },
+// Tabs grouped by use frequency — divider renders between groups
+const TAB_GROUPS = [
+  // Daily use
+  [
+    { id: "dashboard", label: null, icon: true },
+    { id: "waivers", label: "Waivers" },
+    { id: "lockin", label: "Lock-In" },
+  ],
+  // Research / strategy
+  [
+    { id: "trade", label: "Trade Evaluator" },
+    { id: "rankings", label: "Rankings" },
+    { id: "league", label: "League" },
+  ],
+  // Seasonal / rare
+  [
+    { id: "bigboard", label: "Big Board" },
+    { id: "draft", label: "Draft Night" },
+  ],
 ];
+const TABS = TAB_GROUPS.flat();
 
 const NOW = new Date().toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" });
 
@@ -46,11 +57,26 @@ export default function App() {
         </div>
 
         <nav className="top-bar-nav">
-          {TABS.map(t => (
-            <button key={t.id} className={`nav-tab${tab === t.id ? " active" : ""}`}
-              onClick={() => setTab(t.id)}>
-              {t.icon ? <Home size={16} /> : t.label}
-            </button>
+          {TAB_GROUPS.map((group, gi) => (
+            <span key={gi} style={{ display: "contents" }}>
+              {gi > 0 && (
+                <span style={{
+                  display: "inline-block", width: 1,
+                  height: 16, background: "var(--border)",
+                  margin: "0 4px", verticalAlign: "middle", opacity: 0.7,
+                }} />
+              )}
+              {group.map((t, ti) => (
+                <button
+                  key={t.id}
+                  className={`nav-tab${tab === t.id ? " active" : ""}`}
+                  onClick={() => setTab(t.id)}
+                  style={gi === 2 ? { opacity: 0.55, fontSize: 11 } : {}}
+                >
+                  {t.icon ? <Home size={16} /> : t.label}
+                </button>
+              ))}
+            </span>
           ))}
         </nav>
 
