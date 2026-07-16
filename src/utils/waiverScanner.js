@@ -296,7 +296,8 @@ ${weakLines}
 WAIVER SYSTEM: Rolling priority (using a claim sends me to the back of the queue — a real cost).
 ${waiverContext ? `ADDITIONAL CONTEXT (treat as hard facts): ${waiverContext}` : ""}
 
-ANSWER EXACTLY THIS STRUCTURE, plain text, no markdown:
+OUTPUT RULES: Start IMMEDIATELY with "VERDICT:" — no preamble, no acknowledgement, no dividers, no markdown, no line breaks inside a field. One line per field except SUSTAINABILITY and REASONING which are single flowing paragraphs.
+ANSWER EXACTLY THIS STRUCTURE:
 VERDICT: [ADD NOW / WATCHLIST / PASS]
 DROP: [which of my players to drop, or "none worth dropping"]
 PRIORITY: [BURN PRIORITY / WAIT FOR FA — will he clear waivers in a sleepy 10-team league?]

@@ -29,6 +29,52 @@ function ScoreBar({ score }) {
   );
 }
 
+function parseVerdict(text) {
+  const fields = {};
+  const keys = ["VERDICT", "DROP", "PRIORITY", "SUSTAINABILITY", "REASONING"];
+  // strip anything before the first VERDICT:
+  const start = text.indexOf("VERDICT:");
+  const body = start >= 0 ? text.slice(start) : text;
+  const pattern = new RegExp(`(${keys.join("|")}):\\s*([\\s\\S]*?)(?=(?:${keys.join("|")}):|$)`, "g");
+  let m;
+  while ((m = pattern.exec(body)) !== null) {
+    fields[m[1]] = m[2].replace(/\s*\n\s*/g, " ").replace(/^[-—\s]+/, "").trim();
+  }
+  return Object.keys(fields).length >= 3 ? fields : null;
+}
+
+const VERDICT_STYLE = {
+  "ADD NOW": { bg: "var(--green-bg)", color: "var(--green)" },
+  "WATCHLIST": { bg: "var(--accent-light)", color: "var(--accent-dim)" },
+  "PASS": { bg: "var(--surface-2)", color: "var(--text-muted)" },
+};
+
+function VerdictCard({ text }) {
+  const f = parseVerdict(text);
+  if (!f) {
+    return <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "10px 12px", marginTop: 10, fontSize: 12, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{text}</div>;
+  }
+  const vKey = Object.keys(VERDICT_STYLE).find(k => (f.VERDICT || "").toUpperCase().includes(k)) || "PASS";
+  const vs = VERDICT_STYLE[vKey];
+  const burn = (f.PRIORITY || "").toUpperCase().includes("BURN");
+  return (
+    <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", marginTop: 10, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: vs.bg }}>
+        <span style={{ fontWeight: 800, fontSize: 12, color: vs.color, letterSpacing: "0.05em" }}>{vKey}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, marginLeft: "auto", padding: "2px 8px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: burn ? "var(--red)" : "var(--text-muted)" }}>
+          {burn ? "🔥 BURN PRIORITY" : "⏳ WAIT FOR FA"}
+        </span>
+      </div>
+      <div style={{ padding: "8px 12px", fontSize: 12, lineHeight: 1.5 }}>
+        {f.DROP && <div style={{ paddingBottom: 6 }}><span style={{ fontWeight: 700, color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Drop </span>{f.DROP}</div>}
+        {f.PRIORITY && <div style={{ paddingBottom: 6 }}><span style={{ fontWeight: 700, color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Priority </span>{f.PRIORITY}</div>}
+        {f.SUSTAINABILITY && <div style={{ paddingBottom: 6 }}><span style={{ fontWeight: 700, color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Sustainability </span>{f.SUSTAINABILITY}</div>}
+        {f.REASONING && <div><span style={{ fontWeight: 700, color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>Reasoning </span>{f.REASONING}</div>}
+      </div>
+    </div>
+  );
+}
+
 function FACard({ r, watched, onDismiss, onWatch, expanded, onToggle, onVerdict, verdict, verdictLoading }) {
   return (
     <div className="card" style={{ marginBottom: 8, opacity: 1 }}>
@@ -60,11 +106,7 @@ function FACard({ r, watched, onDismiss, onWatch, expanded, onToggle, onVerdict,
               <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>+{c.pts}</span>
             </div>
           ))}
-          {verdict && (
-            <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "10px 12px", marginTop: 10, fontSize: 12, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
-              {verdict}
-            </div>
-          )}
+          {verdict && <VerdictCard text={verdict} />}
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             <button className="btn btn-sm btn-accent" disabled={verdictLoading} onClick={(e) => { e.stopPropagation(); onVerdict(r); }}>
               {verdictLoading ? <><span className="spinner" /> Analysing...</> : "✦ Verdict"}
