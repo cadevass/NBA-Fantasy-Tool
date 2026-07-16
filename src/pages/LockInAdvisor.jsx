@@ -9,8 +9,6 @@ import { getRankings } from "../utils/rankings";
 import { getNegotiationLog } from "../utils/negotiationLog";
 import { getTeamContexts } from "../utils/teamContext";
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 const EMPTY_GAME = { pts: "", reb: "", ast: "", stl: "", blk: "", to: "", threesMade: "" };
 
 // ALL_ROSTER now comes from Sleeper context
@@ -42,7 +40,7 @@ export default function LockInAdvisor() {
   const [customPlayer, setCustomPlayer] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [game, setGame] = useState({ ...EMPTY_GAME });
-  const [remainingGames, setRemainingGames] = useState([{ day: "Thu", opponent: "vs BOS", enabled: true }]);
+  const [remainingGames, setRemainingGames] = useState([{ opponent: "", enabled: true }]);
   const [injuryStatus, setInjuryStatus] = useState("Healthy");
   const [extraContext, setExtraContext] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,7 +81,7 @@ export default function LockInAdvisor() {
     if (!player) return null;
     return calcSeasonAverageFP(player);
   }
-  function addRemainingGame() { setRemainingGames(prev => [...prev, { day: "Sun", opponent: "vs GSW", enabled: true }]); }
+  function addRemainingGame() { setRemainingGames(prev => [...prev, { opponent: "", enabled: true }]); }
   function removeRemainingGame(i) { setRemainingGames(prev => prev.filter((_, idx) => idx !== i)); }
   function updateRemaining(i, field, val) { setRemainingGames(prev => prev.map((g, idx) => idx === i ? { ...g, [field]: val } : g)); }
 
@@ -113,7 +111,7 @@ export default function LockInAdvisor() {
   async function analyse() {
     setLoading(true); setResult(null);
     try {
-      const remainingStr = remainingGames.filter(g => g.enabled).map(g => `${g.day}: ${g.opponent}`).join(", ") || "No games remaining";
+      const remainingStr = remainingGames.filter(g => g.enabled).map(g => g.opponent || "Unknown opponent").join(", ") || "No games remaining";
       const evStr = evData?.available
         ? `EV ENGINE: P(beat ${fantasyScore} in ${evData.remainingGames} game${evData.remainingGames > 1 ? "s" : ""}) = ${evData.prob}% | EV of waiting = ${evData.ev} FP | Math verdict = ${evData.mathVerdict} | Player mean = ${evData.mean} FP | Boom rate (35+ FP) = ${evData.boomRate}%${evData.dnpRate > 0 ? ` | DNP risk = ${evData.dnpRate}%` : ""}`
         : "";
@@ -244,10 +242,7 @@ REASONING: [2-3 sentences max in fantasy point terms — direct and opinionated,
                 {remainingGames.map((g, i) => (
                   <div key={i} className="flex gap-2 items-center">
                     <input type="checkbox" checked={g.enabled} onChange={e => updateRemaining(i, "enabled", e.target.checked)} />
-                    <select className="select" value={g.day} onChange={e => updateRemaining(i, "day", e.target.value)} style={{ flex: "0 0 70px", fontSize: 12 }}>
-                      {DAYS.map(d => <option key={d}>{d}</option>)}
-                    </select>
-                    <input className="input" value={g.opponent} onChange={e => updateRemaining(i, "opponent", e.target.value)} placeholder="vs OPP" style={{ flex: 1, fontSize: 12 }} />
+                    <input className="input" value={g.opponent} onChange={e => updateRemaining(i, "opponent", e.target.value)} placeholder="vs OPP (e.g. vs BOS)" style={{ flex: 1, fontSize: 12 }} />
                     <button className="btn btn-ghost btn-xs" onClick={() => removeRemainingGame(i)}><X size={11} /></button>
                   </div>
                 ))}
