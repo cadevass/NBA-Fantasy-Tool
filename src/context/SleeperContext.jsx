@@ -14,6 +14,11 @@ export function useSleeperContext() {
 }
 
 async function fetchPlayers() {
+  // Clear legacy cache keys (v1, v2 didn't have sport_id)
+  localStorage.removeItem("sleeper_players_cache");
+  localStorage.removeItem("sleeper_players_cache_date");
+  localStorage.removeItem("sleeper_players_cache_v2");
+  localStorage.removeItem("sleeper_players_cache_v2_date");
   const today = new Date().toDateString();
   const cachedDate = localStorage.getItem(PLAYERS_CACHE_DATE_KEY);
   const cachedPlayers = localStorage.getItem(PLAYERS_CACHE_KEY);
