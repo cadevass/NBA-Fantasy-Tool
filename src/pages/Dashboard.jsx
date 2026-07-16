@@ -32,7 +32,7 @@ function getMatchupQuality(opp) {
 }
 
 export default function Dashboard() {
-  const { myTeam, players: sleeperPlayers } = useSleeperContext();
+  const { myTeam } = useSleeperContext();
   const [todaysGames, setTodaysGames] = useState([]);
   const [activePlayers, setActivePlayers] = useState([]);
   const [nbaPlayers, setNbaPlayers] = useState([]);
@@ -202,13 +202,31 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
     }
   }
 
+  // Static NBA CDN IDs for current roster — update when roster changes
+  const NBA_IDS = {
+    "Cade Cunningham": 1630595,
+    "Jalen Johnson": 1630552,
+    "Dejounte Murray": 1627749,
+    "De'Aaron Fox": 1628368,
+    "Alex Sarr": 1642259,
+    "Kel'el Ware": 1642276,
+    "Franz Wagner": 1630532,
+    "Payton Pritchard": 1630202,
+    "Michael Porter": 1629008,
+    "Peyton Watson": 1631212,
+    "Bennedict Mathurin": 1631097,
+    "Scoot Henderson": 1630703,
+    "Donovan Clingan": 1642270,
+    "Collin Murray-Boyles": 1642867,
+    "Kasparas Jakučionis": 1642857,
+  };
+
   function getNbaId(playerName) {
-    if (!sleeperPlayers) return null;
-    const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const entry = Object.values(sleeperPlayers).find(p =>
-      norm(`${p.first_name} ${p.last_name}`) === norm(playerName)
-    );
-    return entry?.sport_id || null;
+    // Exact match first, then partial last-name match
+    if (NBA_IDS[playerName]) return NBA_IDS[playerName];
+    const lastName = playerName.split(" ").slice(-1)[0].toLowerCase();
+    const match = Object.entries(NBA_IDS).find(([k]) => k.toLowerCase().includes(lastName));
+    return match?.[1] || null;
   }
 
   function cycleLock(name, gamesLeft) {
