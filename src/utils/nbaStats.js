@@ -1,6 +1,6 @@
 const BASE_URL = "https://api.server.nbaapi.com/api";
-const CACHE_KEY = "nba_stats_2026";
-const CACHE_DATE_KEY = "nba_stats_2026_date";
+const CACHE_KEY = "nba_stats_2026_v2";
+const CACHE_DATE_KEY = "nba_stats_2026_v2_date";
 
 function getCached() {
   try {

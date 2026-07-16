@@ -228,7 +228,7 @@ export default function Waivers() {
       </div>
 
       <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>
-        📈 Minutes spike · 🔥 FP rising · P/M per-min monster · STK stocks · TRND trending
+        📈 Minutes spike · 🔥 FP rising
       </div>
 
       {results.map(r => (

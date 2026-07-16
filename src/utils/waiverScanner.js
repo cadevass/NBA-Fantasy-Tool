@@ -169,9 +169,6 @@ export function scoreFA(fa, ctx) {
   const badges = [];
   if (minutesPts > 0) badges.push({ kind: "emoji", label: "📈" });
   if (fpDivPts > 0) badges.push({ kind: "emoji", label: "🔥" });
-  if (permPts > 0) badges.push({ kind: "chip", label: "P/M" });
-  if (stocksFP >= 2.5) badges.push({ kind: "chip", label: "STK" });
-  if (trendPts > 0) badges.push({ kind: "chip", label: "TRND" });
 
   return { score, components, badges, seasonFP, gl: gl || null, trendCount };
 }
