@@ -2,12 +2,18 @@
 // Lock-In EV Engine — Phase 3.
 // Computes probability + expected value of waiting vs locking, from
 // the player's empirical game log distribution in Supabase game_logs.
-import { supabase } from "./supabase";
+// supabase client loaded lazily to avoid circular init
+let _supabase = null;
+async function getClient() {
+  if (!_supabase) _supabase = (await import("./supabase")).supabase;
+  return _supabase;
+}
 
 const SAMPLE = 20; // games to build distribution from
 
 export async function fetchPlayerLogs(playerName, limit = SAMPLE) {
   try {
+    const supabase = await getClient();
     const { data, error } = await supabase
       .from("game_logs")
       .select("game_date, fp, min, pts, reb, ast, stl, blk")
@@ -49,6 +55,7 @@ export function evWait(logs, n, simRuns = 2000) {
 // (if they sit their last game of the week you eat a zero)
 export async function fetchDNPRate(playerName) {
   try {
+    const supabase = await getClient();
     const { data, error } = await supabase
       .from("game_logs")
       .select("min")
