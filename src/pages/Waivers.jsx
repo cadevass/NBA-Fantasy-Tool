@@ -4,8 +4,11 @@ import { useSleeperContext } from "../context/SleeperContext";
 import { fetchPlayerSeasonStats } from "../utils/nbaStats";
 import {
   runScan, getLastScan, getDismissed, dismissPlayer, undismissPlayer,
-  isVisible, getWatchlist, toggleWatch, normName,
+  isVisible, getWatchlist, toggleWatch, normName, buildVerdictPrompt,
 } from "../utils/waiverScanner";
+import { callClaude } from "../utils/api";
+import { getRankings } from "../utils/rankings";
+import { weakestRosterPlayers } from "../utils/waiverScanner";
 
 function Badge({ children }) {
   return <span style={{ marginRight: 3 }}>{children}</span>;
@@ -26,7 +29,7 @@ function ScoreBar({ score }) {
   );
 }
 
-function FACard({ r, watched, onDismiss, onWatch, expanded, onToggle }) {
+function FACard({ r, watched, onDismiss, onWatch, expanded, onToggle, onVerdict, verdict, verdictLoading }) {
   return (
     <div className="card" style={{ marginBottom: 8, opacity: 1 }}>
       <div style={{ display: "flex", alignItems: "center", padding: "10px 14px", cursor: "pointer", gap: 12 }} onClick={onToggle}>
@@ -57,7 +60,15 @@ function FACard({ r, watched, onDismiss, onWatch, expanded, onToggle }) {
               <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>+{c.pts}</span>
             </div>
           ))}
+          {verdict && (
+            <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "10px 12px", marginTop: 10, fontSize: 12, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+              {verdict}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button className="btn btn-sm btn-accent" disabled={verdictLoading} onClick={(e) => { e.stopPropagation(); onVerdict(r); }}>
+              {verdictLoading ? <><span className="spinner" /> Analysing...</> : "✦ Verdict"}
+            </button>
             <button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); onWatch(r.name); }}>
               {watched ? <><EyeOff size={12} /> Unwatch</> : <><Eye size={12} /> Watchlist</>}
             </button>
@@ -81,6 +92,24 @@ export default function Waivers() {
   const [expandedName, setExpandedName] = useState(null);
   const [filter, setFilter] = useState("all"); // all | watchlist | dismissed
   const [posFilter, setPosFilter] = useState("ALL");
+  const [verdicts, setVerdicts] = useState({});
+  const [verdictLoading, setVerdictLoading] = useState(null);
+
+  async function getVerdict(r) {
+    setVerdictLoading(r.name);
+    try {
+      const rankings = await getRankings();
+      const weakest = weakestRosterPlayers(rankings, 3);
+      const prompt = buildVerdictPrompt(r, weakest);
+      const text = await callClaude([{ role: "user", content: prompt }]);
+      const clean = text.replace(/\*\*/g, "").replace(/\*/g, "").replace(/#{1,3} /g, "").trim();
+      setVerdicts(v => ({ ...v, [r.name]: clean }));
+    } catch (e) {
+      setVerdicts(v => ({ ...v, [r.name]: `Error: ${e.message}` }));
+    } finally {
+      setVerdictLoading(null);
+    }
+  }
 
   async function doScan() {
     if (!teams) { setError("Sync league rosters first (League tab)"); return; }
@@ -164,6 +193,9 @@ export default function Waivers() {
             setDismissed(getDismissed());
           }}
           onWatch={(name) => setWatchlist({ ...toggleWatch(name) })}
+          onVerdict={getVerdict}
+          verdict={verdicts[r.name]}
+          verdictLoading={verdictLoading === r.name}
         />
       ))}
 

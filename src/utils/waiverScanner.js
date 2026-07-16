@@ -266,3 +266,40 @@ export function weakestRosterPlayers(rankings, count = 3) {
     .sort((a, b) => a.value - b.value)
     .slice(0, count);
 }
+
+// ── AI Verdict ──
+// The verdict answers three things: (1) is the production real or an
+// injury-vacuum mirage, (2) who on MY roster is the drop, (3) is this
+// worth burning rolling waiver priority or safe to wait for FA.
+export function buildVerdictPrompt(result, weakest, waiverContext = "") {
+  const compLines = result.components.map(c => `- ${c.label}: ${c.detail} (+${c.pts})`).join("\n");
+  const weakLines = (weakest || [])
+    .map(w => `- ${w.name}: ${w.value}/100 (${w.trend})${w.summary ? ` — ${w.summary}` : ""}`)
+    .join("\n") || "- (no consensus values available for roster)";
+  const gl = result.gl
+    ? `Recent form (last ${result.gl.games} games): ${result.gl.recentFP} FP in ${result.gl.recentMin} mpg (${result.gl.fpPerMin} FP/min)`
+    : "No recent game log data (offseason or early season).";
+
+  return `WAIVER WIRE VERDICT REQUEST
+
+CANDIDATE: ${result.name} (${result.position}, ${result.team}, age ${result.age})
+Season: ${result.pts}pts/${result.reb}reb/${result.ast}ast/${result.stl}stl/${result.blk}blk in ${result.minutes} mpg — ~${result.seasonFP} FP/game
+${gl}
+Scanner Score: ${result.score}
+Score components:
+${compLines}
+${result.trendCount > 0 ? `Platform-wide Sleeper adds (24h): ${result.trendCount.toLocaleString()}` : ""}
+
+MY WEAKEST ROSTER HOLDINGS (drop candidates, by consensus value):
+${weakLines}
+
+WAIVER SYSTEM: Rolling priority (using a claim sends me to the back of the queue — a real cost).
+${waiverContext ? `ADDITIONAL CONTEXT (treat as hard facts): ${waiverContext}` : ""}
+
+ANSWER EXACTLY THIS STRUCTURE, plain text, no markdown:
+VERDICT: [ADD NOW / WATCHLIST / PASS]
+DROP: [which of my players to drop, or "none worth dropping"]
+PRIORITY: [BURN PRIORITY / WAIT FOR FA — will he clear waivers in a sleepy 10-team league?]
+SUSTAINABILITY: [Is this production role-driven or an injury-vacuum mirage? What happens when the roster normalises?]
+REASONING: [2-3 sentences max. Direct and opinionated, no hedging.]`;
+}
