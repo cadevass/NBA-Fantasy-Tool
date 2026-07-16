@@ -60,6 +60,7 @@ export async function fetchPlayerSeasonStats() {
       return {
         id: primary.playerId,
         name: primary.playerName,
+        position: primary.position,
         team: primary.team,
         age: primary.age,
         gp: primary.games,
