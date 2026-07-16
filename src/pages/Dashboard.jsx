@@ -32,7 +32,7 @@ function getMatchupQuality(opp) {
 }
 
 export default function Dashboard() {
-  const { myTeam } = useSleeperContext();
+  const { myTeam, players: sleeperPlayers } = useSleeperContext();
   const [todaysGames, setTodaysGames] = useState([]);
   const [activePlayers, setActivePlayers] = useState([]);
   const [nbaPlayers, setNbaPlayers] = useState([]);
@@ -42,6 +42,9 @@ export default function Dashboard() {
   const [playerB, setPlayerB] = useState("");
   const [startSitLoading, setStartSitLoading] = useState(false);
   const [startSitResult, setStartSitResult] = useState(null);
+  const [lockStates, setLockStates] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("dashboard_lock_states") || "{}"); } catch { return {}; }
+  });
   const [marketValues, setMarketValues] = useState([]);
   const [negLog, setNegLog] = useState([]);
   useEffect(() => { getRankings().then(setMarketValues); }, []);
@@ -199,6 +202,36 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
     }
   }
 
+  function getNbaId(playerName) {
+    if (!sleeperPlayers) return null;
+    const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const entry = Object.values(sleeperPlayers).find(p =>
+      norm(`${p.first_name} ${p.last_name}`) === norm(playerName)
+    );
+    return entry?.sport_id || null;
+  }
+
+  function cycleLock(name, gamesLeft) {
+    setLockStates(prev => {
+      const cur = prev[name];
+      let next;
+      if (!cur || cur.state === "unlocked") next = { state: "locked", fp: null };
+      else if (cur.state === "locked" && cur.fp === null) next = { state: "locked", fp: 0 };
+      else next = { state: "unlocked" };
+      const updated = { ...prev, [name]: next };
+      try { localStorage.setItem("dashboard_lock_states", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }
+
+  function setLockedFP(name, fp) {
+    setLockStates(prev => {
+      const updated = { ...prev, [name]: { state: "locked", fp: parseFloat(fp) || 0 } };
+      try { localStorage.setItem("dashboard_lock_states", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }
+
   const SLOT_ORDER = ["PG","SG","G","SF","PF","F","C","UTIL"];
   const sortedActive = [...activePlayers].sort((a, b) => {
     const ai = SLOT_ORDER.findIndex(s => a.pos?.includes(s));
@@ -237,41 +270,85 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
           {sortedActive.map(p => {
             const mq = p.game ? getMatchupQuality(p.game.opponent) : null;
             return (
-              <div key={p.name} className="card" style={{ padding: 0 }}>
-                <div style={{ padding: "14px 16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                        {p.pos?.join("/")} · {p.team}
+              {(() => {
+                const nbaId = getNbaId(p.name);
+                const lock = lockStates[p.name] || { state: "unlocked" };
+                const gamesLeft = 1; // static until matchup endpoint active in October
+                const isLocked = lock.state === "locked";
+                const isWarning = !isLocked && gamesLeft === 1;
+                return (
+                  <div key={p.name} className="card" style={{ padding: 0, overflow: "hidden" }}>
+                    {/* Headshot + info row */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 0, padding: "12px 14px 10px" }}>
+                      {/* Headshot */}
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "var(--surface-2)", border: "1px solid var(--border)", flexShrink: 0, marginRight: 10 }}>
+                        {nbaId ? (
+                          <img
+                            src={`https://cdn.nba.com/headshots/nba/latest/260x190/${nbaId}.png`}
+                            alt={p.name}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                            onError={e => {
+                              e.target.style.display = "none";
+                              e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--text-muted)">${p.name.split(" ").map(w=>w[0]).join("").slice(0,2)}</div>`;
+                            }}
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--text-muted)" }}>
+                            {p.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                          </div>
+                        )}
+                      </div>
+                      {/* Name + meta */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.2 }}>{p.name}</div>
+                          {mq && (
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 20, background: mq.bg, color: mq.color, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0, marginLeft: 4 }}>{mq.label}</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                          {p.pos?.join("/")} · {p.team}
+                          {p.game && <span> · vs {p.game.opponent} · {p.game.time}</span>}
+                        </div>
                       </div>
                     </div>
-                    {mq && (
-                      <span style={{ 
-                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                        background: mq.bg, color: mq.color, textTransform: "uppercase", letterSpacing: "0.05em"
-                      }}>{mq.label}</span>
+                    {/* Season avg FP */}
+                    {p.seasonAvgFP && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 14px 10px", background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "5px 10px" }}>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Season Avg</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 15, marginLeft: "auto" }}>{p.seasonAvgFP} FP</span>
+                      </div>
                     )}
-                  </div>
-                  {p.game && (
-                    <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>
-                      vs {p.game.opponent} · {p.game.time} AWST
-                      {p.game.status && <span style={{ marginLeft: 6, color: "var(--text-muted)" }}>· {p.game.status}</span>}
-                    </div>
-                  )}
-                  {p.seasonAvgFP && (
-                    <div style={{ 
-                      display: "flex", alignItems: "center", gap: 6,
-                      background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "6px 10px"
-                    }}>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Season Avg</span>
-                      <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 16, marginLeft: "auto" }}>
-                        {p.seasonAvgFP} FP
+                    {/* Lock status strip */}
+                    <div
+                      onClick={() => cycleLock(p.name, gamesLeft)}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "7px 14px", cursor: "pointer",
+                        background: isLocked ? "var(--green-bg)" : isWarning ? "var(--red-bg)" : "var(--surface-2)",
+                        borderTop: "1px solid var(--border)",
+                      }}
+                    >
+                      <span style={{ fontSize: 11, fontWeight: 700, color: isLocked ? "var(--green)" : isWarning ? "var(--red)" : "var(--text-muted)", letterSpacing: "0.03em" }}>
+                        {isLocked ? "🔒 LOCKED" : isWarning ? "⚠️ LAST GAME" : "⏳ UNLOCKED"}
                       </span>
+                      {isLocked && (
+                        <input
+                          type="number"
+                          placeholder="FP"
+                          value={lock.fp || ""}
+                          onClick={e => e.stopPropagation()}
+                          onChange={e => setLockedFP(p.name, e.target.value)}
+                          style={{ width: 52, fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13, border: "none", background: "transparent", color: "var(--green)", textAlign: "right", outline: "none" }}
+                        />
+                      )}
+                      {!isLocked && (
+                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{gamesLeft}g left · tap to lock</span>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                );
+              })()}
             );
           })}
         </div>
