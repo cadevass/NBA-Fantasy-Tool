@@ -61,7 +61,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/sleeper-players")
+    fetch("/api/nba-ids")
       .then(r => r.json())
       .then(setNbaIdMap)
       .catch(() => {});
