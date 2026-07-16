@@ -307,12 +307,10 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
                     </div>
                   </div>
                 </div>
-                {p.seasonAvgFP && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 14px 10px", background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "5px 10px" }}>
-                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Season Avg</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 15, marginLeft: "auto" }}>{p.seasonAvgFP} FP</span>
-                  </div>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 14px 10px", background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "5px 10px" }}>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Season Avg</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 15, marginLeft: "auto" }}>{p.seasonAvgFP ? `${p.seasonAvgFP} FP` : "—"}</span>
+                </div>
                 <div
                   onClick={() => cycleLock(p.name, gamesLeft)}
                   style={{

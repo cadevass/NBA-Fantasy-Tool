@@ -3,8 +3,8 @@ import { fetchStartupDraft } from "../utils/sleeperDraft";
 
 const LEAGUE_ID = "1371805753509158912";
 const SLEEPER_BASE = "https://api.sleeper.app/v1";
-const PLAYERS_CACHE_KEY = "sleeper_players_cache_v2";
-const PLAYERS_CACHE_DATE_KEY = "sleeper_players_cache_v2_date";
+const PLAYERS_CACHE_KEY = "sleeper_players_cache_v3";
+const PLAYERS_CACHE_DATE_KEY = "sleeper_players_cache_v3_date";
 const LEAGUE_CACHE_KEY = "sleeper_league_cache";
 
 const SleeperContext = createContext(null);
