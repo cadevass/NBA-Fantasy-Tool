@@ -37,7 +37,7 @@ export default function Dashboard() {
   const [activePlayers, setActivePlayers] = useState([]);
   const [nbaPlayers, setNbaPlayers] = useState([]);
   const [loadingSchedule, setLoadingSchedule] = useState(true);
-  const [espnIdMap, setEspnIdMap] = useState({});
+  const [nbaIdMap, setNbaIdMap] = useState({});
   const [showStartSit, setShowStartSit] = useState(false);
   const [playerA, setPlayerA] = useState("");
   const [playerB, setPlayerB] = useState("");
@@ -61,6 +61,13 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    fetch("/api/sleeper-players")
+      .then(r => r.json())
+      .then(setNbaIdMap)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     async function fetchSchedule() {
       setLoadingSchedule(true);
       try {
@@ -69,22 +76,6 @@ export default function Dashboard() {
         const games = data.events || [];
         setTodaysGames(games);
 
-        // Build name→NBA CDN ID map from ESPN athlete data
-        const idMap = {};
-        await Promise.all(games.slice(0, 6).map(async e => {
-          try {
-            const sumRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=${e.id}`);
-            if (!sumRes.ok) return;
-            const sum = await sumRes.json();
-            for (const teamBox of sum.boxscore?.players || []) {
-              for (const athlete of teamBox.statistics?.[0]?.athletes || []) {
-                const a = athlete.athlete;
-                if (a?.displayName && a?.id) idMap[a.displayName] = a.id;
-              }
-            }
-          } catch {}
-        }));
-        setEspnIdMap(idMap);
 
         if (!myTeam) return;
         const allPlayers = [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])];
@@ -221,7 +212,13 @@ REASONING: [2-3 sentences in fantasy point terms — direct and opinionated]`;
   }
 
   function getNbaId(playerName) {
-    return espnIdMap[playerName] || null;
+    if (nbaIdMap[playerName]) return nbaIdMap[playerName];
+    // Fuzzy last-name fallback for slight name mismatches
+    const lastName = playerName.split(" ").slice(-1)[0].toLowerCase();
+    const match = Object.entries(nbaIdMap).find(([k]) =>
+      k.toLowerCase().split(" ").slice(-1)[0] === lastName
+    );
+    return match?.[1] || null;
   }
 
   function cycleLock(name, gamesLeft) {
