@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Home } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
+import Debrief from "./pages/Debrief";
 import Rankings from "./pages/Rankings";
 import BigBoard from "./pages/BigBoard";
 import TradeFinder from "./pages/TradeFinder";
@@ -36,6 +37,7 @@ const NOW = new Date().toLocaleDateString("en-AU", { month: "short", day: "numer
 
 export default function App() {
   const [tab, setTab] = useState("dashboard");
+  const [homeTab, setHomeTab] = useState("dashboard");
   const [dynastyMode, setDynastyMode] = useState(() => localStorage.getItem("dynasty_mode") || "contending");
   const toggleMode = useCallback(() => {
     setDynastyMode(prev => {
@@ -92,7 +94,16 @@ export default function App() {
       </header>
 
       <main className="main-content">
-        {tab === "dashboard" && <Dashboard />}
+        {tab === "dashboard" && (
+          <div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+              <button className={`tab-btn${homeTab === "dashboard" ? " active" : ""}`} onClick={() => setHomeTab("dashboard")}>🏠 Today</button>
+              <button className={`tab-btn${homeTab === "debrief" ? " active" : ""}`} onClick={() => setHomeTab("debrief")}>📋 Debrief</button>
+            </div>
+            {homeTab === "dashboard" && <Dashboard />}
+            {homeTab === "debrief" && <Debrief />}
+          </div>
+        )}
         {tab === "bigboard" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 20, alignItems: "start" }}>
             <BigBoard />
