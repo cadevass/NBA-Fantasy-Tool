@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Radar from "./Radar";
 import { RefreshCw, User, Star } from "lucide-react";
 import { useSleeperContext } from "../context/SleeperContext";
 
@@ -99,10 +100,18 @@ function TeamCard({ team, expanded, onToggle }) {
 export default function League() {
   const { teams, loading, error, lastSynced, sync } = useSleeperContext();
   const [expandedId, setExpandedId] = useState(null);
+  const [leagueTab, setLeagueTab] = useState("rosters");
 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
+        <div style={{ display: "flex", gap: 6, marginBottom: 0 }}>
+          <button className={`tab-btn${leagueTab === "rosters" ? " active" : ""}`} onClick={() => setLeagueTab("rosters")}>Rosters</button>
+          <button className={`tab-btn${leagueTab === "radar" ? " active" : ""}`} onClick={() => setLeagueTab("radar")}>📡 Radar</button>
+        </div>
+      </div>
+      {leagueTab === "radar" && <Radar />}
+      {leagueTab === "rosters" && <div className="flex items-center justify-between mb-3">
         <div>
           <div className="font-semibold" style={{ fontSize: 16 }}>League Rosters</div>
           <div className="text-sm text-muted mt-1">
@@ -148,6 +157,7 @@ export default function League() {
           onToggle={() => setExpandedId(expandedId === team.rosterId ? null : team.rosterId)}
         />
       ))}
+      </div>}
     </div>
   );
 }
