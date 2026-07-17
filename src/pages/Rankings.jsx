@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Zap, Plus, X, Edit2, Save, Trash2, ChevronDown, ChevronUp, Newspaper } from "lucide-react";
 import { useSleeperContext } from "../context/SleeperContext";
-import { fetchPlayerSeasonStats } from "../utils/nbaStats";
+import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { callClaude } from "../utils/api";
 import {
   getRankings, saveRankings, sortRankings,
@@ -312,7 +312,7 @@ END`;
           const isExpanded = expandedId === player.id;
           const isEditing = editingId === player.id;
           const onTradeBlock = tradeBlock.some(t => t.name?.toLowerCase() === player.name?.toLowerCase());
-          const stats = nbaPlayers.find(p => p.name?.toLowerCase() === player.name?.toLowerCase());
+          const stats = findPlayer(nbaPlayers, player.name);
           const ownership = ownershipMap[player.name] || player.category;
 
           return (
