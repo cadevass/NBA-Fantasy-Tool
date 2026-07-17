@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Radar from "./Radar";
+import TradeBlock from "./TradeBlock";
 import { RefreshCw, User, Star } from "lucide-react";
 import { useSleeperContext } from "../context/SleeperContext";
 
@@ -98,6 +99,7 @@ export default function League() {
   const { teams, loading, error, lastSynced, sync } = useSleeperContext();
   const [expandedId, setExpandedId] = useState(null);
   const [leagueTab, setLeagueTab] = useState("rosters");
+  const [expandedId2, setExpandedId2] = useState(null);
 
   return (
     <div>
@@ -105,10 +107,12 @@ export default function League() {
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         <button className={`tab-btn${leagueTab === "rosters" ? " active" : ""}`} onClick={() => setLeagueTab("rosters")}>Rosters</button>
         <button className={`tab-btn${leagueTab === "radar" ? " active" : ""}`} onClick={() => setLeagueTab("radar")}>📡 Radar</button>
+        <button className={`tab-btn${leagueTab === "block" ? " active" : ""}`} onClick={() => setLeagueTab("block")}>🏷️ Trade Block</button>
       </div>
 
       {/* Radar tab */}
       {leagueTab === "radar" && <Radar />}
+      {leagueTab === "block" && <TradeBlock />}
 
       {/* Rosters tab */}
       {leagueTab === "rosters" && (
