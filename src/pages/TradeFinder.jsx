@@ -880,10 +880,9 @@ TRADE_3:
                       <div style={{ color: "var(--text-secondary)", lineHeight: 1.5 }}>
                         {targetPlayer.name} is not in your Market Value Database. Add them first so the Offer Builder has grounded values to work with — otherwise it will hallucinate.
                       </div>
-                      <button className="btn btn-ghost btn-sm" style={{ marginTop: 8, color: "var(--red)" }}
-                        onClick={() => setShowMarketValues(true)}>
-                        Open Market Values →
-                      </button>
+                      <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)" }}>
+                        → Go to <strong>Rankings</strong> tab and add this player to your database first.
+                      </div>
                     </div>
                   ) : (
                     <>
