@@ -17,6 +17,37 @@ const TREND_COLORS = {
   Falling: { color: "var(--red)", bg: "var(--red-bg)", icon: "↓" },
 };
 
+function Sparkline({ player }) {
+  // Build value history from newsLog + current value
+  const history = [];
+  if (player.newsLog?.length > 0) {
+    // newsLog entries have previousValue — reconstruct timeline
+    const entries = [...player.newsLog].reverse();
+    entries.forEach(e => { if (e.previousValue !== undefined) history.push(e.previousValue); });
+  }
+  history.push(player.value);
+  if (history.length < 2) return null;
+
+  const min = Math.min(...history) - 5;
+  const max = Math.max(...history) + 5;
+  const range = max - min || 1;
+  const w = 48, h = 20;
+  const points = history.map((v, i) => {
+    const x = (i / (history.length - 1)) * w;
+    const y = h - ((v - min) / range) * h;
+    return `${x},${y}`;
+  }).join(" ");
+  const last = history[history.length - 1];
+  const first = history[0];
+  const color = last > first ? "var(--green)" : last < first ? "var(--red)" : "var(--text-muted)";
+  return (
+    <svg width={w} height={h} style={{ flexShrink: 0 }}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx={points.split(" ").pop().split(",")[0]} cy={points.split(" ").pop().split(",")[1]} r="2" fill={color} />
+    </svg>
+  );
+}
+
 function OwnershipIcon({ category, style }) {
   if (category === "My Roster") return <span title="My Roster" style={{ fontSize: 14, ...style }}>🟢</span>;
   if (category === "League Player") return <span title="League Rostered" style={{ fontSize: 14, ...style }}>🔵</span>;
@@ -331,6 +362,13 @@ END`;
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 600, fontSize: 14 }}>{player.name}</span>
                     {onTradeBlock && <span title="On trade block" style={{ fontSize: 11 }}>🏷️</span>}
+                    {(() => {
+                      if (!player.updatedAt) return null;
+                      const daysSince = Math.floor((Date.now() - new Date(player.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+                      return daysSince >= 30 ? (
+                        <span title={`Last updated ${daysSince} days ago`} style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.7 }}>⏳</span>
+                      ) : null;
+                    })()}
                     <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{player.position} · {player.nbaTeam}</span>
                   </div>
                   {stats && (
@@ -349,6 +387,8 @@ END`;
                   </div>
                   <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 14, minWidth: 24 }}>{player.value}</span>
                 </div>
+                {/* Sparkline */}
+                <Sparkline player={player} />
                 {/* Trend */}
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
                   background: TREND_COLORS[player.trend]?.bg, color: TREND_COLORS[player.trend]?.color, minWidth: 70, textAlign: "center" }}>
@@ -400,6 +440,19 @@ END`;
                         <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{player.summary}</div>
                       )}
                       <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Last updated: {player.updatedAt}</div>
+                      {player.communityValue && (
+                        <div style={{ fontSize: 11, marginTop: 4 }}>
+                          <span style={{ color: "var(--text-muted)" }}>Community: </span>
+                          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{player.communityValue}</span>
+                          <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>
+                            {player.value > player.communityValue
+                              ? <span style={{ color: "var(--green)" }}>+{player.value - player.communityValue} above market</span>
+                              : player.value < player.communityValue
+                              ? <span style={{ color: "var(--red)" }}>-{player.communityValue - player.value} below market</span>
+                              : <span>= at market</span>}
+                          </span>
+                        </div>
+                      )}
                       {/* News Log */}
                       {player.newsLog?.length > 0 && (
                         <div>
