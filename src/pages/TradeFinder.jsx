@@ -12,6 +12,7 @@ import { dbSet, dbGet } from "../utils/supabase";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { buildDraftContext } from "../utils/sleeperDraft";
 import { buildFullContext } from "../utils/fullContext";
+import { findOpportunities, getFinderCache, saveFinderCache, isCacheStale } from "../utils/tradeFinder";
 import { getRankings } from "../utils/rankings";
 
 const PICK_YEARS = ["2026", "2027", "2028"];
@@ -248,6 +249,13 @@ export default function TradeFinder() {
   useEffect(() => { getRankings().then(setMarketValues); }, []);
   const [negLog, setNegLog] = useState([]);
   const [aiProfiles, setAiProfiles] = useState({});
+  const [finderResults, setFinderResults] = useState(() => {
+    const cache = getFinderCache();
+    return cache && !isCacheStale(cache) ? cache.results : null;
+  });
+  const [finderLoading, setFinderLoading] = useState(false);
+  const [finderAI, setFinderAI] = useState({});
+  const [finderAILoading, setFinderAILoading] = useState(null);
   const [generatingProfile, setGeneratingProfile] = useState(null);
   const [selectedTeamProfile, setSelectedTeamProfile] = useState(null);
   useEffect(() => { getAiProfiles().then(setAiProfiles); }, []);
@@ -602,6 +610,7 @@ TRADE_3:
           <button className={`tab-btn${activeTab === "suggest" ? " active" : ""}`} onClick={() => setActiveTab("suggest")}>Offer Builder</button>
           <button className={`tab-btn${activeTab === "teams" ? " active" : ""}`} onClick={() => setActiveTab("teams")}>Teams</button>
           <button className={`tab-btn${activeTab === "history" ? " active" : ""}`} onClick={() => setActiveTab("history")}>History</button>
+          <button className={`tab-btn${activeTab === "finder" ? " active" : ""}`} onClick={() => setActiveTab("finder")}>🔍 Trade Finder</button>
         </div>
       </div>
 
@@ -1230,6 +1239,121 @@ TRADE_3:
       )}
 
       {/* HISTORY */}
+      {activeTab === "finder" && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="font-semibold" style={{ fontSize: 16 }}>Proactive Trade Finder</div>
+              <div className="text-sm text-muted mt-1">
+                {finderResults ? `${finderResults.length} opportunities found` : "Scan your league for asymmetric trade opportunities"}
+                {getFinderCache()?.cachedAt && <span> · cached {new Date(getFinderCache().cachedAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>}
+              </div>
+            </div>
+            <button className="btn btn-accent btn-sm" disabled={finderLoading} onClick={async () => {
+              setFinderLoading(true);
+              try {
+                const results = findOpportunities({
+                  teams,
+                  rankings: marketValues,
+                  myTeam,
+                  aiProfiles,
+                  teamContexts,
+                  dynastyMode,
+                });
+                setFinderResults(results);
+                saveFinderCache({ results });
+              } finally {
+                setFinderLoading(false);
+              }
+            }}>
+              {finderLoading ? <><span className="spinner" /> Scanning...</> : "🔍 Scan Now"}
+            </button>
+          </div>
+
+          {finderResults && finderResults.length === 0 && (
+            <div className="card"><div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 13 }}>
+              No strong opportunities detected — add more League Players to your Rankings database to improve coverage.
+            </div></div>
+          )}
+
+          {(finderResults || []).map((opp, i) => (
+            <div key={i} className="card" style={{ marginBottom: 10 }}>
+              <div className="card-header">
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{opp.player}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                    {opp.pos.join("/")} · <span style={{ fontWeight: 600 }}>{opp.team}</span> · {opp.status}
+                  </div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: 18 }}>{opp.playerValue}</div>
+                    <div style={{ fontSize: 9, color: opp.playerTrend === "Rising" ? "var(--green)" : opp.playerTrend === "Falling" ? "var(--red)" : "var(--text-muted)", fontWeight: 700 }}>
+                      {opp.playerTrend === "Rising" ? "↑" : opp.playerTrend === "Falling" ? "↓" : "→"} {opp.playerTrend}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: "8px 14px" }}>
+                {opp.angles.map((a, j) => (
+                  <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3, flexShrink: 0,
+                      background: a.urgency === "high" ? "var(--accent-light)" : "var(--surface-2)",
+                      color: a.urgency === "high" ? "var(--accent-dim)" : "var(--text-muted)" }}>
+                      {a.label.toUpperCase()}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>{a.detail}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", display: "flex", gap: 8 }}>
+                <button className="btn btn-sm btn-accent" onClick={() => {
+                  setSuggestTeamId(opp.rosterId);
+                  setActiveTab("suggest");
+                }}>
+                  Open in Offer Builder →
+                </button>
+                <button className="btn btn-sm" disabled={finderAILoading === i} onClick={async () => {
+                  setFinderAILoading(i);
+                  try {
+                    const ctx = buildFullContext({
+                      myTeam, nbaPlayers, marketValues, negLog,
+                      tradeBlock: JSON.parse(localStorage.getItem("trade_block") || "[]"),
+                      teamContexts, startupDraft, teams,
+                      targetRosterId: opp.rosterId,
+                      aiProfiles, dynastyMode,
+                      slices: ["dynasty_mode", "scoring", "roster", "market_values", "target_team"],
+                    });
+                    const prompt = `TRADE OPPORTUNITY ANALYSIS
+
+Target: ${opp.player} (${opp.pos.join("/")}, ${opp.team}) — ${opp.playerValue}/100 ${opp.playerTrend}
+Angles identified: ${opp.angles.map(a => a.label).join(", ")}
+${opp.angles.map(a => a.detail).join(". ")}
+
+${ctx}
+
+In 3-4 sentences: Is this a genuine opportunity worth pursuing right now? What's the realistic ask, what do I offer, and is the timing right? Direct and opinionated — no hedging.`;
+                    const text = await callClaude([{ role: "user", content: prompt }]);
+                    setFinderAI(prev => ({ ...prev, [i]: text.replace(/\*\*/g, "").replace(/\*/g, "").trim() }));
+                  } catch (e) {
+                    setFinderAI(prev => ({ ...prev, [i]: `Error: ${e.message}` }));
+                  } finally {
+                    setFinderAILoading(null);
+                  }
+                }}>
+                  {finderAILoading === i ? <><span className="spinner" /> Analysing...</> : "✦ AI Take"}
+                </button>
+              </div>
+              {finderAI[i] && (
+                <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)", fontSize: 12, lineHeight: 1.6, color: "var(--text-secondary)", background: "var(--surface-2)" }}>
+                  {finderAI[i]}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {activeTab === "history" && (
         <div className="flex-col gap-3">
           {history.length === 0 ? (
