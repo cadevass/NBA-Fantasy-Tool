@@ -321,6 +321,15 @@ END`;
               onClick={() => setCatFilter(c)}>{c}</button>
           ))}
         </div>
+        <div className="flex gap-1">
+          {[["All","All"],["Rising","↑ Rising"],["Stable","→ Stable"],["Falling","↓ Falling"]].map(([val, label]) => (
+            <button key={val} className={`btn btn-xs ${trendFilter === val ? "btn-accent" : "btn-ghost"}`}
+              onClick={() => setTrendFilter(val)}
+              style={{ color: trendFilter !== val ? (val === "Rising" ? "var(--green)" : val === "Falling" ? "var(--red)" : undefined) : undefined }}>
+              {label}
+            </button>
+          ))}
+        </div>
 
       </div>
 
