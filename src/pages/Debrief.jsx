@@ -87,6 +87,8 @@ function PlayerDebriefCard({ player, side, weekGames, onDecision, decision }) {
   const isAuto = decision?.type === "auto";
   const isBenched = decision?.type === "benched";
   const lockedFP = isLocked ? (decision.fp ?? player.lockedFP) : isAuto ? player.lockedFP : null;
+  // Auto-select mock-0 when player has lockedFP but no gameDate selected yet
+  const effectiveGameDate = decision?.gameDate ?? (player.lockedFP !== null && !isSeasonConfigured() ? "mock-0" : null);
 
   // NBA CDN headshot — uses same ID logic as Dashboard
   const NBA_IDS = {
@@ -96,7 +98,7 @@ function PlayerDebriefCard({ player, side, weekGames, onDecision, decision }) {
     "Franz Wagner": 1630532, "Payton Pritchard": 1630202,
     "Michael Porter": 1629008, "Peyton Watson": 1631212,
     "Bennedict Mathurin": 1631097, "Scoot Henderson": 1630703,
-    "Donovan Clingan": 1642270, "Nikola Jokic": 203999,
+    "Donovan Clingan": 1642270, "Dylan Harper": 1642256, "Carter Bryant": 1642363, "Nikola Jokic": 203999,
     "Dylan Harper": 1642256, "Jaylen Brown": 1627759,
     "Jalen Williams": 1630591, "Scottie Barnes": 1630567,
     "Tyler Herro": 1629029, "Kyrie Irving": 202681,
@@ -166,15 +168,15 @@ function PlayerDebriefCard({ player, side, weekGames, onDecision, decision }) {
                     style={{ cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: "50%",
-                      background: decision?.gameDate === `mock-${i}` ? "var(--accent)" : "var(--surface-2)",
-                      border: `2px solid ${decision?.gameDate === `mock-${i}` ? "var(--accent)" : "var(--border)"}`,
+                      background: effectiveGameDate === `mock-${i}` ? "var(--accent)" : "var(--surface-2)",
+                      border: `2px solid ${effectiveGameDate === `mock-${i}` ? "var(--accent)" : "var(--border)"}`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 7, fontWeight: 700, color: decision?.gameDate === `mock-${i}` ? "#fff" : "var(--text-muted)",
+                      fontSize: 7, fontWeight: 700, color: effectiveGameDate === `mock-${i}` ? "#fff" : "var(--text-muted)",
                       fontFamily: "var(--font-mono)",
                       position: "relative",
                     }}>
                       {opp}
-                      {decision?.gameDate === `mock-${i}` && (
+                      {effectiveGameDate === `mock-${i}` && (
                         <div style={{ position: "absolute", bottom: -2, left: "50%", transform: "translateX(-50%)", width: "80%", height: 2, background: "var(--accent)", borderRadius: 1 }} />
                       )}
                     </div>
