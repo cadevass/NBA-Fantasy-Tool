@@ -62,6 +62,7 @@ export default function Rankings() {
   const [search, setSearch] = useState("");
   const [posFilter, setPosFilter] = useState("All");
   const [catFilter, setCatFilter] = useState("All");
+  const [trendFilter, setTrendFilter] = useState("All");
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -99,6 +100,7 @@ export default function Rankings() {
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (posFilter !== "All" && p.position !== posFilter) return false;
     if (catFilter !== "All" && p.category !== catFilter) return false;
+    if (trendFilter !== "All" && p.trend !== trendFilter) return false;
     return true;
   }));
 
