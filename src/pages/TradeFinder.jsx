@@ -958,7 +958,11 @@ TRADE_3:
                       return acc;
                     }, []);
                     const pickCount = giveNames.filter(n => /(\d{4})\s+(1st|2nd|3rd)/i.test(n)).length;
-                    const giveTotal = matchedPlayers.reduce((s, v) => s + v, 0);
+                    // Quantity penalty: each extra asset beyond first discounted 12%
+                    const rawGiveTotal = matchedPlayers.reduce((s, v) => s + v, 0);
+                    const extraAssets = Math.max(0, matchedPlayers.length - 1);
+                    const quantityPenalty = extraAssets > 0 ? Math.round(rawGiveTotal * (1 - extraAssets * 0.12)) : rawGiveTotal;
+                    const giveTotal = quantityPenalty;
                     const targetVal = mv?.value || 0;
 
                     const isStarConsolidation = matchedPlayers.length >= 2 && giveTotal >= targetVal * 0.7;
@@ -1006,6 +1010,11 @@ TRADE_3:
                                 <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>YOU GET</div>
                               </div>
                             </div>
+                            {extraAssets > 0 && (
+                              <div style={{ marginTop: 6, fontSize: 11, color: "var(--text-muted)" }}>
+                                ⚖️ Quantity penalty applied ({extraAssets} extra asset{extraAssets > 1 ? "s" : ""}, −{Math.round(extraAssets * 12)}% on give side) — star side typically wins multi-for-one deals
+                              </div>
+                            )}
                             {isStarConsolidation && (
                               <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 600 }}>
                                 ⭐ Star consolidation — trading quantity for quality, which typically favours you long-term
@@ -1037,6 +1046,53 @@ TRADE_3:
                               <div style={{ fontSize: 13, lineHeight: 1.6 }}>{trade.whyWin}</div>
                             </div>
                           )}
+
+                          {/* Post-trade roster preview */}
+                          {(() => {
+                            const myRoster = myTeam ? [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi||[])] : [];
+                            const giveNames = trade.give.split(/[,+]/).map(s => s.trim().toLowerCase());
+                            const afterRoster = myRoster.filter(p => !giveNames.some(g => p.name.toLowerCase().includes(g) || g.includes(p.name.toLowerCase())));
+                            if (afterRoster.length === myRoster.length) return null;
+                            const incoming = targetPlayer?.name;
+                            return (
+                              <div>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Post-Trade Roster</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  {incoming && (
+                                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "var(--green-bg)", color: "var(--green)", fontWeight: 600, border: "1px solid var(--green)" }}>
+                                      + {incoming}
+                                    </span>
+                                  )}
+                                  {myRoster.filter(p => giveNames.some(g => p.name.toLowerCase().includes(g) || g.includes(p.name.toLowerCase()))).map(p => (
+                                    <span key={p.name} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "var(--red-bg)", color: "var(--red)", fontWeight: 600, border: "1px solid var(--red)", textDecoration: "line-through" }}>
+                                      {p.name}
+                                    </span>
+                                  ))}
+                                  {afterRoster.map(p => (
+                                    <span key={p.name} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "var(--surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
+                                      {p.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Share button */}
+                          <button className="btn btn-sm" style={{ alignSelf: "flex-start", marginTop: 4 }}
+                            onClick={() => {
+                              const text = `[Backshot Dynasty Trade Offer]
+I give: ${trade.give}
+I receive: ${targetPlayer?.name}${trade.give.includes(targetPlayer?.name) ? "" : ""}
+
+${trade.whyAccept || ""}`;
+                              navigator.clipboard.writeText(text).then(() => {
+                                const btn = document.activeElement;
+                                if (btn) { const orig = btn.textContent; btn.textContent = "Copied!"; setTimeout(() => btn.textContent = orig, 1500); }
+                              });
+                            }}>
+                            📋 Copy for Sleeper Chat
+                          </button>
                         </div>
                       </div>
                     );
