@@ -537,16 +537,19 @@ STEP 3 — Build 3 escalating packages using the declined offer as your floor (i
 
 RULES:
 1. ONLY use players from MY ROSTER or THEIR ROSTER. Never invent players.
-2. FANTASY ONLY — value = pts/reb/ast/stl×2/blk×2/3PM×0.5/DD+1/TD+2.
-3. Match cost to TRUE value — if elite, packages should include better players.
-4. Use negotiation history above to calibrate — past declines tell you what isn't enough.
+2. FANTASY SCORING: pts×0.5/reb×1/ast×1/stl×2/blk×2/3PM×0.5/DD+1/TD+2. LOCK-IN MODE: only one game per week counts — high-variance ceiling players command a premium over consistent floor producers.
+3. TRADE TAX is real — star sellers typically demand 10-15% above calculator fair value. Price this in — expect to slightly overpay for elite assets.
+4. AGE CURVE PREMIUM — players aged 22-25 are worth more than current stats suggest. Factor into what you are willing to pay.
+5. Match packages to the SELLER'S actual roster needs — give them players that fill their positional gaps or fit their timeline, not just equivalent value on paper.
+6. Use negotiation history above to calibrate — past declines tell you what isn't enough.
 
 IMPORTANT: Start your response with TRADE_1: on the very first line. No preamble. No headers.
 
 Generate exactly 3 packages in escalating order:
-- TRADE_1: Opening Anchor — lowest realistic offer to start negotiations. Still meaningful but leaves room to negotiate up.
-- TRADE_2: Fair Value — what the trade actually costs based on market values. Both sides should feel this is roughly fair.
-- TRADE_3: Walk-Away Max — the most you would pay. Only go here if they're stubborn. If they reject this, walk away.
+- TRADE_1: Opening Anchor — MINIMUM viable offer. Ideally 1 player + 1 pick sweetener. Leave maximum room to negotiate up. Do NOT pile in multiple players here.
+- TRADE_2: Fair Value — clean 1-for-1 or 2-for-1 with a pick. What the trade actually costs. Both sides feel it is roughly fair.
+- TRADE_3: Walk-Away Max — the most you would pay, only if they are stubborn. Can include more players but must still make roster sense. If they reject this, walk away.
+CRITICAL RULES: Picks (e.g. "2027 1st", "2028 2nd") MUST appear in at least 2 of the 3 packages as sweeteners — do not omit them. The opening anchor should almost always include a pick rather than extra players. Never suggest more than 3 players total in any single package.
 
 TRADE_1:
 I_GIVE: [opening anchor package]
