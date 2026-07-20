@@ -86,89 +86,152 @@ function PlayerDebriefCard({ player, side, weekGames, onDecision, decision }) {
   const isLocked = decision?.type === "locked";
   const isAuto = decision?.type === "auto";
   const isBenched = decision?.type === "benched";
+  const lockedFP = isLocked ? (decision.fp ?? player.lockedFP) : isAuto ? player.lockedFP : null;
+
+  // NBA CDN headshot — uses same ID logic as Dashboard
+  const NBA_IDS = {
+    "Cade Cunningham": 1630595, "Jalen Johnson": 1630552,
+    "Dejounte Murray": 1627749, "De'Aaron Fox": 1628368,
+    "Alex Sarr": 1642259, "Kel'el Ware": 1642276,
+    "Franz Wagner": 1630532, "Payton Pritchard": 1630202,
+    "Michael Porter": 1629008, "Peyton Watson": 1631212,
+    "Bennedict Mathurin": 1631097, "Scoot Henderson": 1630703,
+    "Donovan Clingan": 1642270, "Nikola Jokic": 203999,
+    "Dylan Harper": 1642256, "Jaylen Brown": 1627759,
+    "Jalen Williams": 1630591, "Scottie Barnes": 1630567,
+    "Tyler Herro": 1629029, "Kyrie Irving": 202681,
+    "Stephon Castle": 1642248, "Immanuel Quickley": 1630193,
+  };
+  const nbaId = NBA_IDS[player.name] || null;
+
+  const POS_COLORS = { PG: "#1D5C8A", SG: "#2B7A3B", SF: "#D4850A", PF: "#6B4FA0", C: "#C0392B", G: "#1D5C8A", F: "#D4850A", UTIL: "#555", BN: "#888" };
+  const slotColor = POS_COLORS[player.slot] || "var(--text-muted)";
 
   return (
     <div style={{
-      border: "1px solid var(--border)", borderRadius: "var(--radius)",
-      marginBottom: 8, overflow: "hidden",
-      borderLeft: isLocked ? "3px solid var(--green)" : isAuto ? "3px solid var(--red)" : "3px solid transparent",
+      background: "var(--surface)", border: "1px solid var(--border)",
+      borderRadius: "var(--radius-lg)", marginBottom: 10, overflow: "hidden",
     }}>
-      {/* Player header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--surface-2)" }}>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", flexShrink: 0 }}>
-          {player.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{player.name}</div>
-          <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{player.slot} · {player.nbaTeam}</div>
-        </div>
-        {isLocked && (
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 14, color: "var(--green)" }}>{decision.fp ?? "?"}</div>
-            <div style={{ fontSize: 9, color: "var(--text-muted)" }}>locked</div>
+      {/* Main card — Sleeper layout */}
+      <div style={{ display: "flex", gap: 0 }}>
+        {/* Left: headshot */}
+        <div style={{ position: "relative", width: 64, flexShrink: 0 }}>
+          <div style={{ width: 64, height: 72, background: "var(--surface-2)", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+            {nbaId ? (
+              <img src={`https://cdn.nba.com/headshots/nba/latest/260x190/${nbaId}.png`} alt={player.name}
+                style={{ width: 64, objectFit: "cover", objectPosition: "top" }}
+                onError={e => { e.target.style.display = "none"; }} />
+            ) : (
+              <div style={{ width: 64, height: 72, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "var(--text-muted)" }}>
+                {player.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+              </div>
+            )}
           </div>
-        )}
-        {isAuto && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--red)", background: "var(--red-bg)", padding: "2px 6px", borderRadius: 3 }}>AUTO</span>}
-        {isBenched && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", background: "var(--surface)", padding: "2px 6px", borderRadius: 3, border: "1px solid var(--border)" }}>BENCHED</span>}
-      </div>
+          {/* Slot badge */}
+          <div style={{ position: "absolute", top: 4, left: 4, background: slotColor, color: "#fff", fontSize: 8, fontWeight: 800, padding: "1px 4px", borderRadius: 3, letterSpacing: "0.05em" }}>
+            {player.slot}
+          </div>
+        </div>
 
-      {/* Game selection row */}
-      <div style={{ padding: "8px 12px" }}>
-        {!isSeasonConfigured() ? (
-          <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>Season not yet configured — set opening night in weekUtils.js</div>
-        ) : loadingGames ? (
-          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Loading schedule...</div>
-        ) : games.length === 0 ? (
-          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No games this week</div>
-        ) : (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-            {games.map((g, i) => {
-              const isSelected = decision?.type === "locked" && decision?.gameDate === g.dateStr;
-              return (
-                <button
-                  key={i}
-                  onClick={() => onDecision({ type: "locked", gameDate: g.dateStr, gameLabel: g.label, fp: null })}
-                  style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-                    padding: "4px 6px", borderRadius: "var(--radius)", cursor: "pointer",
-                    border: isSelected ? "2px solid var(--green)" : "1px solid var(--border)",
-                    background: isSelected ? "var(--green-bg)" : "var(--surface-2)",
-                    position: "relative",
-                  }}
-                >
-                  {isSelected && (
-                    <Lock size={8} style={{ position: "absolute", top: 2, right: 2, color: "var(--green)" }} />
-                  )}
-                  <TeamLogo abbr={g.opponentAbbr} logo={g.opponentLogo} size={24} />
-                  <span style={{ fontSize: 9, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                    {g.homeAway} {g.opponentAbbr}
-                  </span>
-                  <span style={{ fontSize: 8, color: "var(--text-muted)" }}>
-                    {new Date(g.date).toLocaleDateString("en-AU", { weekday: "short", timeZone: "Australia/Perth" })}
-                  </span>
-                </button>
-              );
-            })}
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, marginLeft: 4 }}>
-              <button
-                onClick={() => onDecision({ type: "auto", fp: player.lockedFP })}
-                style={{ fontSize: 9, padding: "3px 6px", borderRadius: 3, border: `1px solid ${isAuto ? "var(--red)" : "var(--border)"}`, background: isAuto ? "var(--red-bg)" : "var(--surface-2)", color: isAuto ? "var(--red)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }}
-              >
-                AUTO
-              </button>
-              <button
-                onClick={() => onDecision({ type: "benched" })}
-                style={{ fontSize: 9, padding: "3px 6px", borderRadius: 3, border: `1px solid ${isBenched ? "var(--accent)" : "var(--border)"}`, background: isBenched ? "var(--accent-light)" : "var(--surface-2)", color: isBenched ? "var(--accent-dim)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }}
-              >
-                BENCH
-              </button>
+        {/* Right: info + FP */}
+        <div style={{ flex: 1, padding: "10px 12px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{player.name}</div>
+              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
+                {player.pos?.join(" · ")} · {player.nbaTeam}
+                {isAuto && <span style={{ marginLeft: 6, color: "var(--red)", fontWeight: 700 }}>AUTO-LOCKED</span>}
+                {isBenched && <span style={{ marginLeft: 6, color: "var(--text-muted)", fontWeight: 700 }}>BENCHED</span>}
+              </div>
             </div>
+            {lockedFP !== null && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: 22, color: isAuto ? "var(--red)" : "var(--green)", lineHeight: 1 }}>
+                  {lockedFP}
+                </div>
+                <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 2 }}>
+                  {isAuto ? "auto" : "locked"}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Games row */}
+          <div style={{ marginTop: 8 }}>
+            {!isSeasonConfigured() ? (
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {/* Mock game logos for offseason preview */}
+                {["DET","ATL","MIA","BOS"].map((opp, i) => (
+                  <div key={i} onClick={() => onDecision({ type: "locked", gameDate: `mock-${i}`, gameLabel: `vs ${opp}`, fp: player.lockedFP })}
+                    style={{ cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: "50%",
+                      background: decision?.gameDate === `mock-${i}` ? "var(--accent)" : "var(--surface-2)",
+                      border: `2px solid ${decision?.gameDate === `mock-${i}` ? "var(--accent)" : "var(--border)"}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 7, fontWeight: 700, color: decision?.gameDate === `mock-${i}` ? "#fff" : "var(--text-muted)",
+                      fontFamily: "var(--font-mono)",
+                      position: "relative",
+                    }}>
+                      {opp}
+                      {decision?.gameDate === `mock-${i}` && (
+                        <div style={{ position: "absolute", bottom: -2, left: "50%", transform: "translateX(-50%)", width: "80%", height: 2, background: "var(--accent)", borderRadius: 1 }} />
+                      )}
+                    </div>
+                    <span style={{ fontSize: 8, color: "var(--text-muted)" }}>{["Mon","Wed","Fri","Sun"][i]}</span>
+                  </div>
+                ))}
+                <button onClick={() => onDecision({ type: "auto", fp: player.lockedFP })}
+                  style={{ marginLeft: 4, fontSize: 9, padding: "3px 6px", borderRadius: 3, border: `1px solid ${isAuto ? "var(--red)" : "var(--border)"}`, background: isAuto ? "var(--red-bg)" : "transparent", color: isAuto ? "var(--red)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }}>
+                  AUTO
+                </button>
+                <button onClick={() => onDecision({ type: "benched" })}
+                  style={{ fontSize: 9, padding: "3px 6px", borderRadius: 3, border: `1px solid ${isBenched ? "var(--accent)" : "var(--border)"}`, background: isBenched ? "var(--accent-light)" : "transparent", color: isBenched ? "var(--accent-dim)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }}>
+                  BN
+                </button>
+              </div>
+            ) : loadingGames ? (
+              <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Loading...</div>
+            ) : (
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {games.map((g, i) => {
+                  const isSelected = decision?.type === "locked" && decision?.gameDate === g.dateStr;
+                  return (
+                    <div key={i} onClick={() => onDecision({ type: "locked", gameDate: g.dateStr, gameLabel: g.label, fp: null })}
+                      style={{ cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, position: "relative" }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: "50%", overflow: "hidden",
+                        border: `2px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                        background: "var(--surface-2)",
+                      }}>
+                        <TeamLogo abbr={g.opponentAbbr} logo={g.opponentLogo} size={32} />
+                      </div>
+                      {isSelected && (
+                        <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", width: "90%", height: 2, background: "var(--accent)", borderRadius: 1 }} />
+                      )}
+                      <span style={{ fontSize: 8, color: isSelected ? "var(--accent)" : "var(--text-muted)", fontWeight: isSelected ? 700 : 400 }}>
+                        {new Date(g.date).toLocaleDateString("en-AU", { weekday: "short", timeZone: "Australia/Perth" })}
+                      </span>
+                    </div>
+                  );
+                })}
+                <button onClick={() => onDecision({ type: "auto", fp: player.lockedFP })}
+                  style={{ marginLeft: 4, fontSize: 9, padding: "3px 6px", borderRadius: 3, border: `1px solid ${isAuto ? "var(--red)" : "var(--border)"}`, background: isAuto ? "var(--red-bg)" : "transparent", color: isAuto ? "var(--red)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }}>
+                  AUTO
+                </button>
+                <button onClick={() => onDecision({ type: "benched" })}
+                  style={{ fontSize: 9, padding: "3px 6px", borderRadius: 3, border: `1px solid ${isBenched ? "var(--accent)" : "var(--border)"}`, background: isBenched ? "var(--accent-light)" : "transparent", color: isBenched ? "var(--accent-dim)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }}>
+                  BN
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
 
 export default function Debrief() {
   const { myTeam, players: sleeperPlayers, teams } = useSleeperContext();
