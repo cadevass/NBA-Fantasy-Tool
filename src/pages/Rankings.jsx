@@ -7,7 +7,7 @@ import {
   getRankings, saveRankings, sortRankings,
   fuzzyMatch, findPlayerInRankings,
   applyNewsUpdate, revertNewsEntry,
-  getTierFromValue, getBuySell,
+  getTierFromValue,
   POSITIONS, CATEGORIES, TIERS
 } from "../utils/rankings";
 
@@ -62,7 +62,6 @@ export default function Rankings() {
   const [search, setSearch] = useState("");
   const [posFilter, setPosFilter] = useState("All");
   const [catFilter, setCatFilter] = useState("All");
-  const [bsFilter, setBsFilter] = useState("All");
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -100,7 +99,6 @@ export default function Rankings() {
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (posFilter !== "All" && p.position !== posFilter) return false;
     if (catFilter !== "All" && p.category !== catFilter) return false;
-    if (bsFilter !== "All" && getBuySell(p).label !== bsFilter) return false;
     return true;
   }));
 
@@ -321,12 +319,7 @@ END`;
               onClick={() => setCatFilter(c)}>{c}</button>
           ))}
         </div>
-        <div className="flex gap-1">
-          {["All", "BUY", "HOLD", "SELL"].map(b => (
-            <button key={b} className={`btn btn-xs ${bsFilter === b ? "btn-accent" : "btn-ghost"}`}
-              onClick={() => setBsFilter(b)}>{b}</button>
-          ))}
-        </div>
+
       </div>
 
       {/* Rankings Table */}
@@ -337,7 +330,6 @@ END`;
           <div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>No players found</div>
         ) : sorted.map((player, idx) => {
           const rank = idx + 1;
-          const bs = getBuySell(player);
           const tier = getTierFromValue(player.value);
           const trend = TREND_COLORS[player.value > 0 ? player.trend : "Stable"];
           const isExpanded = expandedId === player.id;
@@ -395,9 +387,7 @@ END`;
                   background: TREND_COLORS[player.trend]?.bg, color: TREND_COLORS[player.trend]?.color, minWidth: 70, textAlign: "center" }}>
                   {TREND_COLORS[player.trend]?.icon} {player.trend}
                 </span>
-                {/* Buy/Sell */}
-                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                  background: bs.bg, color: bs.color, minWidth: 44, textAlign: "center" }}>{bs.label}</span>
+
                 {/* Actions */}
                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                   <button className="btn btn-ghost btn-xs" onClick={() => startEdit(player)}><Edit2 size={11} /></button>
