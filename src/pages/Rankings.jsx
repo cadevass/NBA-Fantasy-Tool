@@ -365,8 +365,9 @@ END`;
                     {(() => {
                       if (!player.updatedAt) return null;
                       const daysSince = Math.floor((Date.now() - new Date(player.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
-                      return daysSince >= 30 ? (
-                        <span title={`Last updated ${daysSince} days ago`} style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.7 }}>⏳</span>
+                      const threshold = player.trend === "Falling" ? 7 : player.trend === "Rising" ? 14 : 30;
+                      return daysSince >= threshold ? (
+                        <span title={`Last updated ${daysSince} days ago — ${player.trend} players should be reviewed every ${threshold} days`} style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.7 }}>⏳</span>
                       ) : null;
                     })()}
                     <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{player.position} · {player.nbaTeam}</span>
@@ -440,19 +441,7 @@ END`;
                         <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{player.summary}</div>
                       )}
                       <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Last updated: {player.updatedAt}</div>
-                      {player.communityValue && (
-                        <div style={{ fontSize: 11, marginTop: 4 }}>
-                          <span style={{ color: "var(--text-muted)" }}>Community: </span>
-                          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{player.communityValue}</span>
-                          <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>
-                            {player.value > player.communityValue
-                              ? <span style={{ color: "var(--green)" }}>+{player.value - player.communityValue} above market</span>
-                              : player.value < player.communityValue
-                              ? <span style={{ color: "var(--red)" }}>-{player.communityValue - player.value} below market</span>
-                              : <span>= at market</span>}
-                          </span>
-                        </div>
-                      )}
+
                       {/* News Log */}
                       {player.newsLog?.length > 0 && (
                         <div>
