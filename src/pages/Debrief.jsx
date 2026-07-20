@@ -7,58 +7,6 @@ import { callClaude } from "../utils/api";
 import { getRankings } from "../utils/rankings";
 
 
-// MOCK MATCHUP — remove when season starts October
-const MOCK_ENABLED = true;
-const MOCK_MATCHUP = {
-  mine: {
-    rosterId: 1,
-    username: "JelqEmDown31",
-    totalPoints: 247.5,
-    starters: [
-      { id: "s1", name: "Cade Cunningham", pos: ["PG"], nbaTeam: "DET", slot: "PG", lockedFP: 38.0, isStarter: true },
-      { id: "s2", name: "Dejounte Murray", pos: ["PG","SG"], nbaTeam: "NOP", slot: "SG", lockedFP: 25.5, isStarter: true },
-      { id: "s3", name: "Jalen Johnson", pos: ["PF","SF"], nbaTeam: "ATL", slot: "SF", lockedFP: 32.0, isStarter: true },
-      { id: "s4", name: "Franz Wagner", pos: ["SF","PF"], nbaTeam: "ORL", slot: "PF", lockedFP: 28.0, isStarter: true },
-      { id: "s5", name: "Alex Sarr", pos: ["C"], nbaTeam: "WAS", slot: "C", lockedFP: 31.5, isStarter: true },
-      { id: "s6", name: "Kel'el Ware", pos: ["C","PF"], nbaTeam: "MIL", slot: "UTIL", lockedFP: 29.0, isStarter: true },
-      { id: "s7", name: "Peyton Watson", pos: ["SF"], nbaTeam: "DEN", slot: "UTIL", lockedFP: 22.5, isStarter: true },
-      { id: "s8", name: "Payton Pritchard", pos: ["PG"], nbaTeam: "BOS", slot: "G", lockedFP: 21.5, isStarter: true },
-      { id: "s9", name: "Donovan Clingan", pos: ["C"], nbaTeam: "POR", slot: "UTIL", lockedFP: 19.5, isStarter: true },
-    ],
-    bench: [
-      { id: "b1", name: "Michael Porter", pos: ["SF"], nbaTeam: "BKN", slot: "BN", lockedFP: null, isStarter: false },
-      { id: "b2", name: "Bennedict Mathurin", pos: ["SG"], nbaTeam: "LAC", slot: "BN", lockedFP: null, isStarter: false },
-      { id: "b3", name: "Scoot Henderson", pos: ["PG"], nbaTeam: "POR", slot: "BN", lockedFP: null, isStarter: false },
-    ],
-    allPlayers: [],
-  },
-  opponent: {
-    rosterId: 5,
-    username: "BotswananButler",
-    totalPoints: 231.0,
-    starters: [
-      { id: "o1", name: "Nikola Jokic", pos: ["C"], nbaTeam: "DEN", slot: "C", lockedFP: 44.0, isStarter: true },
-      { id: "o2", name: "Dylan Harper", pos: ["SG"], nbaTeam: "SAS", slot: "SG", lockedFP: 28.5, isStarter: true },
-      { id: "o3", name: "Jaylen Brown", pos: ["SF"], nbaTeam: "PHI", slot: "SF", lockedFP: 31.0, isStarter: true },
-      { id: "o4", name: "Jalen Williams", pos: ["PF"], nbaTeam: "OKC", slot: "PF", lockedFP: 27.0, isStarter: true },
-      { id: "o5", name: "Scottie Barnes", pos: ["PF"], nbaTeam: "TOR", slot: "PF", lockedFP: 25.5, isStarter: true },
-      { id: "o6", name: "Tyler Herro", pos: ["SG"], nbaTeam: "MIL", slot: "G", lockedFP: 22.0, isStarter: true },
-      { id: "o7", name: "Kyrie Irving", pos: ["PG"], nbaTeam: "DAL", slot: "PG", lockedFP: 19.5, isStarter: true },
-      { id: "o8", name: "Stephon Castle", pos: ["SG"], nbaTeam: "SAS", slot: "UTIL", lockedFP: 18.0, isStarter: true },
-      { id: "o9", name: "Immanuel Quickley", pos: ["PG"], nbaTeam: "TOR", slot: "UTIL", lockedFP: 15.5, isStarter: true },
-    ],
-    bench: [
-      { id: "ob1", name: "Dylan Harper", pos: ["SG"], nbaTeam: "SAS", slot: "BN", lockedFP: null, isStarter: false },
-      { id: "ob2", name: "Carter Bryant", pos: ["PF"], nbaTeam: "SAS", slot: "BN", lockedFP: null, isStarter: false },
-    ],
-    allPlayers: [],
-  },
-  week: 1,
-};
-// Populate allPlayers from starters + bench
-MOCK_MATCHUP.mine.allPlayers = [...MOCK_MATCHUP.mine.starters, ...MOCK_MATCHUP.mine.bench];
-MOCK_MATCHUP.opponent.allPlayers = [...MOCK_MATCHUP.opponent.starters, ...MOCK_MATCHUP.opponent.bench];
-
 const SLOT_ORDER = ["PG","SG","G","SF","PF","F","C","UTIL","UTIL","BN","BN","BN","BN","BN","BN","IR","IR","IR","IR","TAXI","TAXI","TAXI"];
 
 function TeamLogo({ abbr, logo, size = 28 }) {
