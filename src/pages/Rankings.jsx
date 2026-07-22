@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Zap, Plus, X, Edit2, Save, Trash2, ChevronDown, ChevronUp, Newspaper } from "lucide-react";
 import { useSleeperContext } from "../context/SleeperContext";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
+import { computeObjectiveRankings, fetchCeilingSignals, TRAITS } from "../utils/objectiveRankings";
 import { callClaude } from "../utils/api";
 import {
   getRankings, saveRankings, sortRankings,
@@ -63,6 +64,11 @@ export default function Rankings() {
   const [posFilter, setPosFilter] = useState("All");
   const [catFilter, setCatFilter] = useState("All");
   const [trendFilter, setTrendFilter] = useState("All");
+  const [viewMode, setViewMode] = useState("manual"); // manual | engine
+  const [engineData, setEngineData] = useState(null);
+  const [engineLoading, setEngineLoading] = useState(false);
+  const [engineExpanded, setEngineExpanded] = useState(null);
+  const [engineScope, setEngineScope] = useState("tracked");
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -95,6 +101,23 @@ export default function Rankings() {
     });
     fetchPlayerSeasonStats().then(setNbaPlayers);
   }, []);
+
+  // Objective engine — computes on first switch to engine view
+  useEffect(() => {
+    if (viewMode !== "engine" || engineData || !nbaPlayers.length) return;
+    setEngineLoading(true);
+    (async () => {
+      try {
+        const signals = await fetchCeilingSignals();
+        setEngineData(computeObjectiveRankings(nbaPlayers, signals));
+      } catch (e) {
+        setEngineData({ rankings: [], poolSize: 0, error: e.message });
+      } finally {
+        setEngineLoading(false);
+      }
+    })();
+  }, [viewMode, nbaPlayers, engineData]);
+
 
   const sorted = sortRankings(rankings.filter(p => {
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -333,7 +356,18 @@ END`;
 
       </div>
 
+      {/* View toggle */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        <button className={`tab-btn${viewMode === "manual" ? " active" : ""}`} onClick={() => setViewMode("manual")}>
+          My Rankings ({rankings.length})
+        </button>
+        <button className={`tab-btn${viewMode === "engine" ? " active" : ""}`} onClick={() => setViewMode("engine")}>
+          ⚙️ Engine
+        </button>
+      </div>
+
       {/* Rankings Table */}
+      {viewMode === "manual" && (
       <div className="card">
         {loading ? (
           <div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>Loading rankings...</div>
@@ -473,6 +507,120 @@ END`;
           );
         })}
       </div>
+      )}
+
+      {/* ENGINE VIEW */}
+      {viewMode === "engine" && (
+        <div>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <div style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4, color: "var(--text-primary)" }}>Objective Rankings Engine</div>
+              Computed from season stats, calibrated to our Lock-In scoring. Each trait is a percentile within the qualifying pool (min 20 games, 14 mpg), weighted, then multiplied by an age curve.
+              {engineData && !engineData.logsActive && (
+                <div style={{ marginTop: 6, color: "var(--text-muted)" }}>
+                  Ceiling + Volatility activate in October once game logs accumulate — weights currently redistributed across the six computable traits.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, alignItems: "center" }}>
+            <button className={`btn btn-xs ${engineScope === "tracked" ? "btn-accent" : "btn-ghost"}`} onClick={() => setEngineScope("tracked")}>In my database</button>
+            <button className={`btn btn-xs ${engineScope === "all" ? "btn-accent" : "btn-ghost"}`} onClick={() => setEngineScope("all")}>Whole league</button>
+            {engineData && <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 4 }}>pool: {engineData.poolSize} qualifying</span>}
+          </div>
+
+          <div className="card">
+            {engineLoading ? (
+              <div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
+                <span className="spinner" style={{ display: "block", margin: "0 auto 12px" }} />
+                Computing percentiles...
+              </div>
+            ) : !engineData ? (
+              <div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>Loading stats...</div>
+            ) : engineData.error ? (
+              <div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--red)" }}>{engineData.error}</div>
+            ) : (() => {
+              const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+              const manualMap = {};
+              rankings.forEach(r => { manualMap[norm(r.name)] = r; });
+              const rows = engineData.rankings.filter(r => engineScope === "all" ? true : manualMap[norm(r.name)]);
+              if (rows.length === 0) return (
+                <div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>No qualifying players in this view.</div>
+              );
+              return rows.map((r, i) => {
+                const manual = manualMap[norm(r.name)];
+                const delta = manual ? r.score - manual.value : null;
+                const isOpen = engineExpanded === r.name;
+                return (
+                  <div key={r.name} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                      onClick={() => setEngineExpanded(isOpen ? null : r.name)}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--text-muted)", minWidth: 28, textAlign: "right" }}>{i + 1}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>
+                          {r.name}
+                          <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6 }}>{r.position} · {r.team} · {r.age}yo</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                          {r.fp} FP/g · {r.minutes} mpg · {r.gp} games
+                        </div>
+                      </div>
+                      {manual && (
+                        <div style={{ textAlign: "right", minWidth: 54 }}>
+                          <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13, color: "var(--text-muted)" }}>{manual.value}</div>
+                          <div style={{ fontSize: 9, color: "var(--text-muted)" }}>mine</div>
+                        </div>
+                      )}
+                      {delta !== null && (
+                        <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)", minWidth: 44, textAlign: "center",
+                          color: Math.abs(delta) < 5 ? "var(--text-muted)" : delta > 0 ? "var(--green)" : "var(--red)" }}>
+                          {delta > 0 ? "+" : ""}{delta}
+                        </span>
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 110 }}>
+                        <div style={{ flex: 1, height: 6, background: "var(--surface-2)", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ width: `${r.score}%`, height: "100%", borderRadius: 3,
+                            background: r.score >= 85 ? "var(--green)" : r.score >= 70 ? "#2B7A3B" : r.score >= 55 ? "var(--accent)" : "var(--red)" }} />
+                        </div>
+                        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 14, minWidth: 24 }}>{r.score}</span>
+                      </div>
+                    </div>
+
+                    {isOpen && (
+                      <div style={{ padding: "12px 16px", background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Trait breakdown</div>
+                        {Object.entries(r.traits).map(([key, t]) => (
+                          <div key={key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0", fontSize: 12 }}>
+                            <span style={{ minWidth: 108, fontWeight: 600 }}>{TRAITS[key] ? TRAITS[key].label : key}</span>
+                            <div style={{ flex: 1, height: 4, background: "var(--surface)", borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ width: `${t.percentile}%`, height: "100%", background: "var(--accent)", borderRadius: 2 }} />
+                            </div>
+                            <span style={{ fontFamily: "var(--font-mono)", minWidth: 34, textAlign: "right", color: "var(--text-muted)" }}>{t.percentile}%</span>
+                            <span style={{ fontFamily: "var(--font-mono)", minWidth: 46, textAlign: "right", fontSize: 11 }}>{t.raw}</span>
+                            <span style={{ fontSize: 10, color: "var(--text-muted)", minWidth: 34, textAlign: "right" }}>w{t.weight}%</span>
+                          </div>
+                        ))}
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                          base {r.baseScore} x age {r.ageMultiplier} ({r.ageBand}) = {r.score}
+                        </div>
+                        {delta !== null && Math.abs(delta) >= 10 && (
+                          <div style={{ marginTop: 8, fontSize: 12, color: delta > 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
+                            {delta > 0
+                              ? `Engine rates him ${delta} higher than you — possible buy target you are undervaluing`
+                              : `You rate him ${Math.abs(delta)} higher than the engine — make sure you can justify the premium`}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
+
 
       {/* News Feed Modal */}
       {showNewsFeed && (

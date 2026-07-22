@@ -1,6 +1,6 @@
 const BASE_URL = "https://api.server.nbaapi.com/api";
-const CACHE_KEY = "nba_stats_2026_v2";
-const CACHE_DATE_KEY = "nba_stats_2026_v2_date";
+const CACHE_KEY = "nba_stats_2026_v3";
+const CACHE_DATE_KEY = "nba_stats_2026_v3_date";
 
 function getCached() {
   try {
@@ -72,6 +72,9 @@ export async function fetchPlayerSeasonStats() {
         to: Math.round(primary.turnovers / g * 10) / 10,
         threesMade: Math.round(primary.threeFg / g * 10) / 10,
         minutes: Math.round(primary.minutesPg / g * 10) / 10,
+        gamesStarted: primary.gamesStarted || 0,
+        fga: Math.round(primary.fieldAttempts / g * 10) / 10,
+        fta: Math.round(primary.ftAttempts / g * 10) / 10,
       };
     });
 
