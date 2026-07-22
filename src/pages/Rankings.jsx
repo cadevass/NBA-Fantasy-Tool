@@ -602,7 +602,7 @@ END`;
                           </div>
                         ))}
                         <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                          {r.fp} FP/g x age {r.ageMultiplier} ({r.ageBand}) x role {r.roleMultiplier} x eff {r.effBonus} = {r.adjusted} adj -> rank #{r.rank} -> {r.score}
+                          {r.fp} FP/g x age {r.ageMultiplier} ({r.ageBand}) x role {r.roleMultiplier} x eff {r.effBonus} = {r.adjusted} adj → rank #{r.rank} → {r.score}
                         </div>
                         {delta !== null && Math.abs(delta) >= 10 && (
                           <div style={{ marginTop: 8, fontSize: 12, color: delta > 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
