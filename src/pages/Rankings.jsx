@@ -541,7 +541,7 @@ END`;
             ) : engineData.error ? (
               <div className="card-body" style={{ textAlign: "center", padding: 40, color: "var(--red)" }}>{engineData.error}</div>
             ) : (() => {
-              const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+              const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
               const manualMap = {};
               rankings.forEach(r => { manualMap[norm(r.name)] = r; });
               const rows = engineData.rankings.filter(r => engineScope === "all" ? true : manualMap[norm(r.name)]);
