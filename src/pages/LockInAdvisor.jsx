@@ -4,6 +4,7 @@ import { useLocalStorage } from "../hooks/useLocalStorage";
 import { callClaude } from "../utils/api";
 import { calcFantasyScore, calcSeasonAverageFP, LOCK_IN_CONTEXT } from "../utils/league";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
+import { loadExactFPMap, getExactFP } from "../utils/sleeperStats";
 import { useSleeperContext } from "../context/SleeperContext";
 import { getRankings } from "../utils/rankings";
 import { getNegotiationLog } from "../utils/negotiationLog";
@@ -33,6 +34,7 @@ export default function LockInAdvisor() {
   const [nbaPlayers, setNbaPlayers] = useState([]);
   useEffect(() => {
     fetchPlayerSeasonStats().then(setNbaPlayers);
+    loadExactFPMap().then(() => setNbaPlayers(prev => [...prev]));
   }, []);
   const ALL_ROSTER = myTeam ? [...myTeam.starters, ...myTeam.bench].map(p => p.name) : [];
   const [sessions, setSessions] = useLocalStorage("lockin_sessions", []);
@@ -77,6 +79,8 @@ export default function LockInAdvisor() {
 
   function updateStat(field, val) { setGame(g => ({ ...g, [field]: val })); }
   function getSeasonAvgFP(name) {
+    const exact = getExactFP(name);
+    if (exact) return exact.fpPerGame;
     const player = findPlayer(nbaPlayers, name);
     if (!player) return null;
     return calcSeasonAverageFP(player);

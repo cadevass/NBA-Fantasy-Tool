@@ -1,4 +1,5 @@
 import { calcSeasonAverageFP } from "./league";
+import { getExactFP } from "./sleeperStats";
 import { buildDraftContext } from "./sleeperDraft";
 import { INTERACTION_TYPES } from "./negotiationLog";
 
@@ -64,7 +65,8 @@ CRITICAL: Steals and blocks are worth 2x — defensive playmakers are premium as
     const allPlayers = [...myTeam.starters, ...myTeam.bench, ...(myTeam.taxi || [])];
     const rosterLines = allPlayers.map(p => {
       const stats = nbaPlayers?.find(x => x.name?.toLowerCase() === p.name?.toLowerCase());
-      const avgFP = stats ? calcSeasonAverageFP(stats) : null;
+      const exact = getExactFP(p.name);
+      const avgFP = exact ? exact.fpPerGame : (stats ? calcSeasonAverageFP(stats) : null);
       const parts = [p.name];
       if (stats) parts.push(`${stats.pts}pts/${stats.reb}reb/${stats.ast}ast/${stats.stl}stl/${stats.blk}blk Age ${stats.age}`);
       if (avgFP) parts.push(`~${avgFP} FP/game avg`);

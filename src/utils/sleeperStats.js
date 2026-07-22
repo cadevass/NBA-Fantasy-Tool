@@ -93,3 +93,41 @@ export function buildExactFPMap(statsById, sleeperPlayers) {
   }
   return out;
 }
+
+// ── Global exact-FP singleton ──
+// Loaded once, then read synchronously anywhere. Falls back to null until
+// ready, so callers keep the estimator as a backstop.
+let _exactMap = null;
+let _loading = null;
+
+export function getExactFP(name) {
+  if (!_exactMap) return null;
+  const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b/g, "").replace(/[^a-z0-9]/g, "");
+  return _exactMap[norm(name)] || null;
+}
+
+export function isExactFPReady() {
+  return !!_exactMap;
+}
+
+export async function loadExactFPMap() {
+  if (_exactMap) return _exactMap;
+  if (_loading) return _loading;
+  _loading = (async () => {
+    try {
+      const [stats, players] = await Promise.all([
+        fetchSleeperSeasonStats("2025"),
+        fetch("https://api.sleeper.app/v1/players/nba").then(r => r.json()).catch(() => null),
+      ]);
+      if (!stats || !players) return null;
+      _exactMap = buildExactFPMap(stats, players);
+      return _exactMap;
+    } catch {
+      return null;
+    } finally {
+      _loading = null;
+    }
+  })();
+  return _loading;
+}

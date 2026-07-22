@@ -3,6 +3,7 @@ import { Home, Zap, X } from "lucide-react";
 import { useSleeperContext } from "../context/SleeperContext";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { calcSeasonAverageFP } from "../utils/league";
+import { loadExactFPMap, getExactFP } from "../utils/sleeperStats";
 import { callClaude } from "../utils/api";
 import { buildFullContext } from "../utils/fullContext";
 import { getRankings } from "../utils/rankings";
@@ -58,6 +59,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchPlayerSeasonStats().then(setNbaPlayers);
+    loadExactFPMap().then(() => setNbaPlayers(prev => [...prev]));
   }, []);
 
   useEffect(() => {
@@ -107,6 +109,8 @@ export default function Dashboard() {
             ...p,
             game: gamesByTeam[p.team],
             seasonAvgFP: nbaPlayers.length ? (() => {
+              const ex = getExactFP(p.name);
+              if (ex) return ex.fpPerGame;
               const s = findPlayer(nbaPlayers, p.name);
               return s ? calcSeasonAverageFP(s) : null;
             })() : null,
@@ -119,6 +123,8 @@ export default function Dashboard() {
             ...p,
             game: { opponent: mockOpponents[i % mockOpponents.length], time: "7:30 PM", status: "MOCK" },
             seasonAvgFP: nbaPlayers.length ? (() => {
+              const ex = getExactFP(p.name);
+              if (ex) return ex.fpPerGame;
               const s = findPlayer(nbaPlayers, p.name);
               return s ? calcSeasonAverageFP(s) : null;
             })() : null,
@@ -140,6 +146,8 @@ export default function Dashboard() {
     setActivePlayers(prev => prev.map(p => ({
       ...p,
       seasonAvgFP: (() => {
+        const ex = getExactFP(p.name);
+        if (ex) return ex.fpPerGame;
         const s = findPlayer(nbaPlayers, p.name);
         return s ? calcSeasonAverageFP(s) : null;
       })(),
