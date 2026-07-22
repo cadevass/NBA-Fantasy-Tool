@@ -51,20 +51,32 @@ export function rolePenalty(p) {
   return 0.88;                                      // limited
 }
 
-// Ratio to league best on a gentle curve. sqrt lifts the mid-pack a little
-// without flattening the gap between 42.3 FP and 32.7 FP.
-function ratioCurve(values) {
-  const max = Math.max(...values, 1);
-  return (v) => Math.round(Math.pow(Math.max(v, 0) / max, 0.7) * 100);
+// Dynasty value curve. Real ranking scales (KTC, Dynatyze) are compressed at
+// the top and decay slowly — the 10th best asset is ~90, not ~77. Anchors are
+// explicit and tunable rather than a formula that happens to look linear.
+const VALUE_ANCHORS = [
+  [1, 99], [2, 97], [3, 96], [5, 94], [8, 92], [12, 90],
+  [20, 86], [30, 82], [45, 77], [60, 72], [80, 67], [100, 62],
+  [130, 55], [160, 49], [200, 42], [250, 34], [300, 27], [400, 20],
+];
+
+function rankToValue(rank) {
+  const a = VALUE_ANCHORS;
+  if (rank <= a[0][0]) return a[0][1];
+  for (let i = 0; i < a.length - 1; i++) {
+    const [r1, v1] = a[i], [r2, v2] = a[i + 1];
+    if (rank <= r2) {
+      const t = (rank - r1) / (r2 - r1);
+      return Math.round(v1 + (v2 - v1) * t);
+    }
+  }
+  return a[a.length - 1][1];
 }
 
 function rawTraits(p) {
   const fp = calcSeasonAverageFP(p) || 0;
   const min = p.minutes || 0;
-  return {
-    production: fp,
-    efficiency: min > 0 ? fp / min : 0,
-  };
+  return { production: fp, efficiency: min > 0 ? fp / min : 0 };
 }
 
 export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
@@ -76,61 +88,56 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
   const logsActive = !!gameLogSignals && Object.keys(gameLogSignals).length > 0;
   const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-  const raws = pool.map(p => ({ player: p, raw: rawTraits(p) }));
+  const rows = pool.map(p => {
+    const raw = rawTraits(p);
+    const gl = logsActive ? gameLogSignals[norm(p.name)] : null;
+    const ceiling = gl?.p90 ?? null;
 
-  if (logsActive) {
-    for (const r of raws) {
-      const gl = gameLogSignals[norm(r.player.name)];
-      if (gl) r.raw.ceiling = gl.p90 ?? null;
+    // Blend production with ceiling (Lock-In) — ceiling only when logs exist
+    let core = raw.production;
+    if (ceiling !== null) core = raw.production * 0.75 + ceiling * 0.25;
+
+    // Efficiency as a small upside nudge, not a separate axis
+    const effBonus = 1 + Math.min(Math.max(raw.efficiency - 0.85, 0), 0.35) * 0.12;
+
+    const ageMult = ageMultiplier(p.age);
+    const roleMult = rolePenalty(p);
+    const adjusted = core * ageMult * roleMult * effBonus;
+
+    return { player: p, raw, ceiling, core, effBonus, ageMult, roleMult, adjusted };
+  });
+
+  rows.sort((a, b) => b.adjusted - a.adjusted);
+
+  const rankings = rows.map((r, i) => {
+    const rank = i + 1;
+    const traits = {
+      production: { raw: Math.round(r.raw.production * 10) / 10, percentile: null, weight: 85 },
+      efficiency: { raw: Math.round(r.raw.efficiency * 100) / 100, percentile: null, weight: 15 },
+    };
+    if (r.ceiling !== null) {
+      traits.ceiling = { raw: r.ceiling, percentile: null, weight: 25 };
     }
-  }
-
-  const activeTraits = Object.keys(TRAITS).filter(k => !TRAITS[k].needsLogs || logsActive);
-
-  const scoreFns = {};
-  for (const key of activeTraits) {
-    const vals = raws.map(r => r.raw[key]).filter(v => typeof v === "number" && !isNaN(v));
-    scoreFns[key] = ratioCurve(vals);
-  }
-
-  const totalWeight = activeTraits.reduce((s, k) => s + TRAITS[k].weight, 0);
-
-  const rankings = raws.map(({ player, raw }) => {
-    const traits = {};
-    let composite = 0;
-    for (const key of activeTraits) {
-      const v = raw[key];
-      if (typeof v !== "number" || isNaN(v)) continue;
-      const s = scoreFns[key](v);
-      const w = TRAITS[key].weight / totalWeight;
-      traits[key] = { raw: Math.round(v * 100) / 100, percentile: s, weight: Math.round(w * 1000) / 10 };
-      composite += s * w;
-    }
-
-    const ageMult = ageMultiplier(player.age);
-    const roleMult = rolePenalty(player);
-
     return {
-      name: player.name,
-      position: player.position,
-      team: player.team,
-      age: player.age,
-      gp: player.gp,
-      minutes: player.minutes,
-      fp: calcSeasonAverageFP(player),
-      baseScore: Math.round(composite),
-      ageMultiplier: ageMult,
-      roleMultiplier: roleMult,
-      ageBand: ageBand(player.age),
-      score: Math.min(99, Math.round(composite * ageMult * roleMult)),
+      name: r.player.name,
+      position: r.player.position,
+      team: r.player.team,
+      age: r.player.age,
+      gp: r.player.gp,
+      minutes: r.player.minutes,
+      fp: r.raw.production,
+      adjusted: Math.round(r.adjusted * 10) / 10,
+      ageMultiplier: r.ageMult,
+      roleMultiplier: r.roleMult,
+      effBonus: Math.round(r.effBonus * 1000) / 1000,
+      ageBand: ageBand(r.player.age),
+      rank,
+      score: rankToValue(rank),
       traits,
     };
   });
 
-  rankings.sort((a, b) => b.score - a.score);
-  rankings.forEach((r, i) => { r.rank = i + 1; });
-
-  return { rankings, poolSize: pool.length, logsActive, activeTraits };
+  return { rankings, poolSize: pool.length, logsActive };
 }
 
 export async function fetchCeilingSignals() {

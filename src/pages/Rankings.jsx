@@ -515,7 +515,7 @@ END`;
           <div className="card" style={{ marginBottom: 12 }}>
             <div style={{ padding: "12px 16px", fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
               <div style={{ fontWeight: 700, marginBottom: 4, color: "var(--text-primary)" }}>Objective Rankings Engine</div>
-              Computed from season stats, calibrated to our Lock-In scoring. Each trait is a percentile within the qualifying pool (min 20 games, 14 mpg), weighted, then multiplied by an age curve.
+              Computed from season stats, calibrated to our Lock-In scoring. FP/game is adjusted for age, role security and efficiency, which sets the ordering. Rank then maps to a dynasty value curve (compressed at the top, like KTC/Dynatyze).
               {engineData && !engineData.logsActive && (
                 <div style={{ marginTop: 6, color: "var(--text-muted)" }}>
                   Ceiling + Volatility activate in October once game logs accumulate — weights currently redistributed across the six computable traits.
@@ -602,7 +602,7 @@ END`;
                           </div>
                         ))}
                         <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                          base {r.baseScore} x age {r.ageMultiplier} ({r.ageBand}) x role {r.roleMultiplier} = {r.score}
+                          {r.fp} FP/g x age {r.ageMultiplier} ({r.ageBand}) x role {r.roleMultiplier} x eff {r.effBonus} = {r.adjusted} adj -> rank #{r.rank} -> {r.score}
                         </div>
                         {delta !== null && Math.abs(delta) >= 10 && (
                           <div style={{ marginTop: 8, fontSize: 12, color: delta > 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
