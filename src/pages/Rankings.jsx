@@ -602,7 +602,7 @@ END`;
                           </div>
                         ))}
                         <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                          base {r.baseScore} x age {r.ageMultiplier} ({r.ageBand}) = {r.score}
+                          base {r.baseScore} x age {r.ageMultiplier} ({r.ageBand}) x role {r.roleMultiplier} = {r.score}
                         </div>
                         {delta !== null && Math.abs(delta) >= 10 && (
                           <div style={{ marginTop: 8, fontSize: 12, color: delta > 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>

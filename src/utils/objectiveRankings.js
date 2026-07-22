@@ -1,28 +1,25 @@
 // src/utils/objectiveRankings.js
-// Phase 8 — Objective Rankings Engine (v2)
+// Phase 8 — Objective Rankings Engine (v3)
 //
-// v1 was broken: it double-counted stocks (calcSeasonAverageFP already applies
-// stl x2 / blk x2, so a separate Stocks Rate trait dipped twice), used flat
-// percentiles that compressed the elite tail, and applied an age curve so
-// aggressive that 20-year-olds outranked top-10 NBA players.
-//
-// v2 is production-dominant. FP/game in OUR scoring is the headline — the
-// stl/blk premium is already inside it. Remaining traits answer: is this
-// sustainable, does it scale, and does it boom (which is what Lock-In pays for).
+// v1: double-counted stocks (calcSeasonAverageFP already applies stl/blk x2),
+//     flat percentiles crushed the elite tail, age curve was a coronation.
+// v2: fixed the double-count but Role Security (16%) acted as noise — it
+//     penalised Wemby for 29 mpg and let Jalen Johnson outrank Jokic despite
+//     a 9.6 FP/g gap. Percentile blending still compressed the top.
+// v3: production is nearly everything, scored as ratio-to-best on a gentle
+//     curve so elite separation survives. Role security is a PENALTY only —
+//     it can punish a bench role but never differentiates two starters.
 import { calcSeasonAverageFP } from "./league";
 
 export const MIN_GAMES = 20;
 export const MIN_MPG = 14;
 
 export const TRAITS = {
-  production:   { label: "Production",    weight: 0.45, needsLogs: false, desc: "FP/game in our scoring — stl/blk 2x already included" },
-  ceiling:      { label: "Ceiling",       weight: 0.25, needsLogs: true,  desc: "90th percentile single game — Lock-In only needs one" },
-  efficiency:   { label: "Efficiency",    weight: 0.18, needsLogs: false, desc: "FP per minute — predicts growth when minutes expand" },
-  roleSecurity: { label: "Role Security", weight: 0.12, needsLogs: false, desc: "Start rate blended with minutes — is it sustainable" },
-  volatility:   { label: "Boom Factor",   weight: 0.04, needsLogs: true,  desc: "Game-to-game variance — high is GOOD in Lock-In" },
+  production: { label: "Production", weight: 0.85, needsLogs: false, desc: "FP/game in our scoring vs league best — stl/blk 2x already inside" },
+  ceiling:    { label: "Ceiling",    weight: 0.25, needsLogs: true,  desc: "90th percentile single game — Lock-In only needs one" },
+  efficiency: { label: "Efficiency", weight: 0.15, needsLogs: false, desc: "FP per minute — upside signal if minutes expand" },
 };
 
-// Softened curve — a nudge, not a coronation
 export function ageMultiplier(age) {
   if (!age) return 1.0;
   if (age <= 21) return 1.06;
@@ -43,39 +40,30 @@ export function ageBand(age) {
   return "34+";
 }
 
+// Role penalty: only ever punishes. Two full starters both get 1.0 — the
+// engine should never split hairs between 34.8 and 35.2 mpg.
+export function rolePenalty(p) {
+  const startRate = p.gp > 0 ? (p.gamesStarted || 0) / p.gp : 0;
+  const min = p.minutes || 0;
+  if (startRate >= 0.7 && min >= 26) return 1.0;   // locked-in starter
+  if (startRate >= 0.4 || min >= 24) return 0.97;  // rotation regular
+  if (min >= 18) return 0.93;                       // bench role
+  return 0.88;                                      // limited
+}
+
+// Ratio to league best on a gentle curve. sqrt lifts the mid-pack a little
+// without flattening the gap between 42.3 FP and 32.7 FP.
+function ratioCurve(values) {
+  const max = Math.max(...values, 1);
+  return (v) => Math.round(Math.pow(Math.max(v, 0) / max, 0.7) * 100);
+}
+
 function rawTraits(p) {
   const fp = calcSeasonAverageFP(p) || 0;
   const min = p.minutes || 0;
-  const startRate = p.gp > 0 ? (p.gamesStarted || 0) / p.gp : 0;
   return {
     production: fp,
     efficiency: min > 0 ? fp / min : 0,
-    roleSecurity: startRate * 0.7 + Math.min(min / 36, 1) * 0.3,
-  };
-}
-
-function percentileMap(values) {
-  const sorted = [...values].sort((a, b) => a - b);
-  return (v) => {
-    if (!sorted.length) return 50;
-    let lo = 0, hi = sorted.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (sorted[mid] < v) lo = mid + 1; else hi = mid;
-    }
-    return Math.round((lo / sorted.length) * 100);
-  };
-}
-
-// Elite tail needs to separate. Flat percentile puts 35 FP and 27 FP eight
-// points apart; this stretches the top end so the gap reflects reality.
-function scaledCurve(values) {
-  const pct = percentileMap(values);
-  const max = Math.max(...values, 1);
-  return (v) => {
-    const p = pct(v);
-    const ratio = v / max;              // 0-1 vs best in pool
-    return Math.round(p * 0.55 + ratio * 100 * 0.45);
   };
 }
 
@@ -93,10 +81,7 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
   if (logsActive) {
     for (const r of raws) {
       const gl = gameLogSignals[norm(r.player.name)];
-      if (gl) {
-        r.raw.ceiling = gl.p90 ?? null;
-        r.raw.volatility = gl.cv ?? null;
-      }
+      if (gl) r.raw.ceiling = gl.p90 ?? null;
     }
   }
 
@@ -105,8 +90,7 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
   const scoreFns = {};
   for (const key of activeTraits) {
     const vals = raws.map(r => r.raw[key]).filter(v => typeof v === "number" && !isNaN(v));
-    // Production and Ceiling use the scaled curve; ratio traits use plain percentile
-    scoreFns[key] = (key === "production" || key === "ceiling") ? scaledCurve(vals) : percentileMap(vals);
+    scoreFns[key] = ratioCurve(vals);
   }
 
   const totalWeight = activeTraits.reduce((s, k) => s + TRAITS[k].weight, 0);
@@ -117,13 +101,15 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
     for (const key of activeTraits) {
       const v = raw[key];
       if (typeof v !== "number" || isNaN(v)) continue;
-      let s = scoreFns[key](v);
-      if (key === "volatility") s = 100 - s; // inverted: boom-bust is good here
+      const s = scoreFns[key](v);
       const w = TRAITS[key].weight / totalWeight;
       traits[key] = { raw: Math.round(v * 100) / 100, percentile: s, weight: Math.round(w * 1000) / 10 };
       composite += s * w;
     }
-    const mult = ageMultiplier(player.age);
+
+    const ageMult = ageMultiplier(player.age);
+    const roleMult = rolePenalty(player);
+
     return {
       name: player.name,
       position: player.position,
@@ -133,9 +119,10 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
       minutes: player.minutes,
       fp: calcSeasonAverageFP(player),
       baseScore: Math.round(composite),
-      ageMultiplier: mult,
+      ageMultiplier: ageMult,
+      roleMultiplier: roleMult,
       ageBand: ageBand(player.age),
-      score: Math.min(99, Math.round(composite * mult)),
+      score: Math.min(99, Math.round(composite * ageMult * roleMult)),
       traits,
     };
   });
@@ -167,11 +154,8 @@ export async function fetchCeilingSignals() {
     for (const [k, fps] of Object.entries(byPlayer)) {
       if (fps.length < 10) continue;
       const sorted = [...fps].sort((a, b) => a - b);
-      const mean = fps.reduce((s, v) => s + v, 0) / fps.length;
-      const sd = Math.sqrt(fps.reduce((s, v) => s + (v - mean) ** 2, 0) / fps.length);
       out[k] = {
         p90: Math.round(sorted[Math.floor(sorted.length * 0.9)] * 10) / 10,
-        cv: mean > 0 ? Math.round((sd / mean) * 1000) / 1000 : 0,
         games: fps.length,
       };
     }
