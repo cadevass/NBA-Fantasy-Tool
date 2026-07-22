@@ -79,7 +79,7 @@ function rawTraits(p) {
   return { production: fp, efficiency: min > 0 ? fp / min : 0 };
 }
 
-export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
+export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null, exactFPMap = null) {
   const pool = (nbaPlayers || []).filter(
     p => (p.gp || 0) >= MIN_GAMES && (p.minutes || 0) >= MIN_MPG
   );
@@ -90,6 +90,12 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
 
   const rows = pool.map(p => {
     const raw = rawTraits(p);
+    // Exact FP from Sleeper season stats beats our estimator — use it when present
+    const exact = exactFPMap ? exactFPMap[norm(p.name)] : null;
+    if (exact) {
+      raw.production = exact.fpPerGame;
+      raw.efficiency = exact.mpg > 0 ? exact.fpPerGame / exact.mpg : raw.efficiency;
+    }
     const gl = logsActive ? gameLogSignals[norm(p.name)] : null;
     const ceiling = gl?.p90 ?? null;
 
@@ -104,7 +110,7 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
     const roleMult = rolePenalty(p);
     const adjusted = core * ageMult * roleMult * effBonus;
 
-    return { player: p, raw, ceiling, core, effBonus, ageMult, roleMult, adjusted };
+    return { player: p, raw, ceiling, core, effBonus, ageMult, roleMult, adjusted, exact };
   });
 
   rows.sort((a, b) => b.adjusted - a.adjusted);
@@ -126,6 +132,7 @@ export function computeObjectiveRankings(nbaPlayers, gameLogSignals = null) {
       gp: r.player.gp,
       minutes: r.player.minutes,
       fp: r.raw.production,
+      fpSource: r.exact ? "sleeper" : "estimated",
       adjusted: Math.round(r.adjusted * 10) / 10,
       ageMultiplier: r.ageMult,
       roleMultiplier: r.roleMult,

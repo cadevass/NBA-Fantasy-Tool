@@ -3,6 +3,7 @@ import { Zap, Plus, X, Edit2, Save, Trash2, ChevronDown, ChevronUp, Newspaper } 
 import { useSleeperContext } from "../context/SleeperContext";
 import { fetchPlayerSeasonStats, findPlayer } from "../utils/nbaStats";
 import { computeObjectiveRankings, fetchCeilingSignals, TRAITS } from "../utils/objectiveRankings";
+import { fetchSleeperSeasonStats, buildExactFPMap } from "../utils/sleeperStats";
 import { callClaude } from "../utils/api";
 import {
   getRankings, saveRankings, sortRankings,
@@ -108,8 +109,15 @@ export default function Rankings() {
     setEngineLoading(true);
     (async () => {
       try {
-        const signals = await fetchCeilingSignals();
-        setEngineData(computeObjectiveRankings(nbaPlayers, signals));
+        const [signals, sleeperStats, sleeperPlayers] = await Promise.all([
+          fetchCeilingSignals(),
+          fetchSleeperSeasonStats("2025"),
+          fetch("https://api.sleeper.app/v1/players/nba").then(r => r.json()).catch(() => null),
+        ]);
+        const exactMap = (sleeperStats && sleeperPlayers)
+          ? buildExactFPMap(sleeperStats, sleeperPlayers)
+          : null;
+        setEngineData(computeObjectiveRankings(nbaPlayers, signals, exactMap));
       } catch (e) {
         setEngineData({ rankings: [], poolSize: 0, error: e.message });
       } finally {
