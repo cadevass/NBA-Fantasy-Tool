@@ -149,6 +149,36 @@ export default function Rankings() {
     await save(rankings.filter(p => p.id !== id));
   }
 
+  // Engine → manual. Overwrites in place if tracked, else prefills the Add form.
+  async function applyEngineScore(r) {
+    const nz = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const existing = rankings.find(p => nz(p.name) === nz(r.name));
+    const today = new Date().toISOString().split("T")[0];
+    if (existing) {
+      if (existing.value === r.score) return;
+      const updated = rankings.map(p => p.id === existing.id
+        ? { ...p, value: r.score, updatedAt: today,
+            newsLog: [{ id: Date.now(), date: today,
+              note: `Engine applied: ${existing.value} → ${r.score}`,
+              previousValue: existing.value }, ...(p.newsLog || [])] }
+        : p);
+      await save(updated);
+    } else {
+      setAddForm({
+        name: r.name,
+        value: r.score,
+        trend: "Stable",
+        category: "League Player",
+        position: String(r.position || "PG").split(/[-,\/]/)[0].trim(),
+        nbaTeam: r.team || "",
+        summary: "",
+      });
+      setShowAddForm(true);
+      setViewMode("manual");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   async function addPlayer() {
     if (!addForm.name) return;
     const newPlayer = {
@@ -604,6 +634,12 @@ END`;
                         <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                           {r.fp} FP/g x age {r.ageMultiplier} ({r.ageBand}) x role {r.roleMultiplier} x eff {r.effBonus} = {r.adjusted} adj → rank #{r.rank} → {r.score}
                         </div>
+                        <button className="btn btn-sm btn-accent" style={{ marginTop: 10 }}
+                          onClick={(e) => { e.stopPropagation(); applyEngineScore(r); }}>
+                          {manual
+                            ? (delta === 0 ? "✓ Already matches" : `Apply ${r.score} to my rankings`)
+                            : `+ Add to rankings at ${r.score}`}
+                        </button>
                         {delta !== null && Math.abs(delta) >= 10 && (
                           <div style={{ marginTop: 8, fontSize: 12, color: delta > 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
                             {delta > 0
